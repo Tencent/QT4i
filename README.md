@@ -21,3 +21,9 @@ QT4i(Quick Test for iOS)，基于QTA提供面向iOS应用的UI测试自动化测
  * 高效维护——基于QPath技术和[QTAF](https://github.com/Tencent/QTAF)UI框架，降低产品变化的脚本维护投入
  
 QT4i需要和[QTAF](https://github.com/Tencent/QTAF)一起使用，请先参考QTAF的使用
+
+------------------------------
+
+欢迎加入QQ群（432699528）交流使用和反馈
+
+![image](https://github.com/Tencent/QTAF/blob/master/docs/misc/qq_group.png)

@@ -32,11 +32,11 @@ If you have some urgent bugfix on a published version, but the `master` branch h
 
 ```
 master
- ¡ü
+ â†‘
 dev        <--- hotfix PR
- ¡ü 
+ â†‘ 
 feature/bugfix PR
-```  
+```
 
 ### Make Pull Requests
 The code team will monitor all pull request, we run some code check and test on it. After all tests passing, we will accecpt this pr. But it won't merge to `master` branch at once, which have some delay.

@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-# 
+#
 # Tencent is pleased to support the open source community by making QTA available.
 # Copyright (C) 2016THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the BSD 3-Clause License (the "License"); you may not use this 
@@ -11,89 +11,87 @@
 # under the License is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
-# 
+#
 '''iOS基础UI控件模块
 '''
-# 2014/11/17    cherry    全面重构
 
-import re, urllib, xmlrpclib
+import base64
+import os
+import StringIO
+import re
+import time
+import traceback
+import uuid
+import xmlrpclib
+import hashlib
+
+from testbase.conf    import settings
 from testbase.util    import LazyInit
-from tuia.qpathparser import QPathParser
+from qt4i.exceptions import  ControlAmbiguousError
 from qt4i.exceptions  import ControlNotFoundError
 from qt4i.app         import App
+from qt4i.device      import QT4i_LOGS_PATH
 from qt4i.qpath       import QPath
 from qt4i.util        import Rectangle, EnumDirect, Timeout
 
-# -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
+
+INS_IOS_DRIVER = True if settings.get('IOS_DRIVER', 'xctest') == 'instruments' else False
+QTA_AI_SWITCH = settings.get('QT4I_AI_SWITCH', False)
+
 
 class ControlContainer(object):
     '''控件集合接口
-    
-当一个类继承本接口，并设置Locator属性后，该类可以使用Controls属于获取控件。如下::
-
-    class SysSettingWin(gf.GFWindow, ControlContainer)
-        def __init__(self):
-            locators={'基本设置Tab': {'type':gf.Button, 'root':self, 'locator'='Finger_Btn'},
-                      '常规页': {'type':gf.Control, 'root':self, 'locator'='PageBasicGeneral'},
-                      '退出程序单选框': {'type':gf.RadioBox, 'root':'@常规页','locator'=QPath("/name='ExitPrograme_RI' && maxdepth='10'")}
-            }
-            self.updateLocator(locators)
-    
-则SysSettingWin().Controls['基本设置Tab']返回设置窗口上基本设置Tab的gf.Button实例,
-而SysSettingWin().Controls['退出程序单选框']，返回设置窗口的常规页下的退出程序单选框实例。
-其中'root'='@常规页'中的'@常规页'表示参数'root'的值不是这个字符串，而是key'常规页'指定的控件。
     '''
     
     def __init__(self):
         self._locators = {}  # 对象定义
-        # self._controls = {}  # 对象缓存（回避没必要的重新实例化）
-    
+        
     def __getitem__(self, key):
         '''操作符"[]"重载
         
         :param key: 控件名
         :type key: str
-        :return: object
+        :rtype: object
         :raises: Exception
         '''
         if not isinstance(key, basestring) or not self._locators.has_key(key): raise Exception('子控件名错误: %s' % key)
         params = self._locators.get(key)
-        # -*- -*- -*- -*- -*- -*-
-        # print 'key     : [%s]' % key
-        # old_obj = self._controls.get(key, None)
-        # if old_obj:
-        #    if old_obj.is_valid():
-        #        print 'element.locator       : %s' % old_obj._locator
-        #        print 'element.id            : %s' % old_obj._id
-        #        print '-' * 10
-        #        return old_obj
-        #    else:
-        #        del self._controls[key]
-        # -*- -*- -*- -*- -*- -*-
-        if isinstance(params, basestring):
-            new_obj = Element(self, params)
-            # self._controls.update({key:new_obj})
-            return new_obj
-        # -*- -*- -*- -*- -*- -*-
         if isinstance(params, dict):
             cls = params.get('type')
             root = params.get('root')
             locator = params.get('locator')
+            title = params.get('title')
+            url = params.get('url')
+            usr_name = params.get('name')
+            mt_instance = params.get('instance')
             params = {'root': root, 'locator': locator}
-            while True:
-                if not isinstance(root, basestring): break
-                if re.match('^@', root):
-                    root_key = re.sub('^@', '', root)
+            if INS_IOS_DRIVER:
+                while True:
+                    if not isinstance(root, basestring): break
+                    if re.match('^@', root):
+                        root_key = re.sub('^@', '', root)
+                        if not self._locators.has_key(root_key):
+                            raise ControlNotFoundError('未找到父控件: %s' % root_key)
+                        root_params = self._locators.get(root_key)
+                        params = {'root'    : root_params.get('root'),
+                                  'locator' : str(root_params.get('locator')) + str(params.get('locator'))}
+                        root = root_params.get('root')                
+            else:
+                if isinstance(root, basestring) and re.match('^@', root):
+                    root_key = root[1:]
                     if not self._locators.has_key(root_key):
                         raise ControlNotFoundError('未找到父控件: %s' % root_key)
-                    root_params = self._locators.get(root_key)
-                    params = {'root'    : root_params.get('root'),
-                              'locator' : str(root_params.get('locator')) + str(params.get('locator'))}
-                    root = root_params.get('root')
-            new_obj = cls(**params)
-            # self._controls.update({key:new_obj})
-            return new_obj
-        # -*- -*- -*- -*- -*- -*-
+                    params['root'] = self[root_key]
+            if usr_name:
+                params['name'] = usr_name 
+            params['id'] = key
+            if title:
+                params['title'] = title
+            if url:
+                params['url'] = url
+            if mt_instance:
+                params['instance'] = mt_instance
+            return cls(**params)
         raise Exception('控件定义的结构异常: [%s]' % key)
     
     @property
@@ -112,7 +110,7 @@ class ControlContainer(object):
         
         :param control_key: 控件名
         :type control_key: str
-        :return: boolean
+        :rtype: boolean
         '''
         return self._locators.has_key(control_key)
     
@@ -124,14 +122,13 @@ class ControlContainer(object):
         '''
         self._locators.update(locators)
 
-    # -*- -*- -*- -*- -*- -*- -*- -*- -*-
     # 此接口要被废弃，请使用 Element(...).wait_for_exist(10)
     def isChildCtrlExist(self, childctrlname, timeout=Timeout(2, 0.005)):
         '''判断子控件是否存在
         
         :param childctrlname: 控件名
         :type childctrlname: str
-        :return: boolean
+        :rtype: boolean
         '''
         print '*' * 30
         print '提示: isChildCtrlExist 接口已过时，请使用 Element(...).wait_for_exist()'
@@ -142,7 +139,6 @@ class ControlContainer(object):
         Element.timeout = old_timeout
         return result
 
-# -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 
 class _Element(object):
 
@@ -153,15 +149,14 @@ class _Element(object):
     def id(self):
         return self._id
 
-# -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 
 class Element(ControlContainer):
     '''控件（UI框架是由各种控件组合而成）
     '''
     
-    timeout = Timeout(2, 0.005)
+    timeout = Timeout(5, 0.005)
     
-    def __init__(self, root, locator):
+    def __init__(self, root, locator, **ext):
         '''构造函数
         
         :param root: 父对象(多态：最顶层是App实例对象)
@@ -170,6 +165,8 @@ class Element(ControlContainer):
         :type locator: QPath | str(QPath) | int已定位到的element的ID
         '''
         ControlContainer.__init__(self)
+        if ext:
+            self.user_name = ext['id']
         self._app = None
         self._root = root
         self._locator = locator
@@ -191,55 +188,39 @@ class Element(ControlContainer):
         self._check_locator(self._locator)
         # -*- -*- -*-
         self._element = LazyInit(self, '_element', self._init_element)
-
+   
     def _check_locator(self, _locator):
-        pass
-        if isinstance(_locator, (QPath, basestring)):
-            parsed_qpath, _ = QPathParser().parse(_locator)
-            # -*-
-            # locators = []
-            # for locator in parsed_qpath:
-            #     props = []
-            #     for propname in locator:
-            #         prop = locator[propname]
-            #         props.append('%s%s\'%s\''%(propname, prop[0], prop[1]))
-            #     locators.append(' && '.join(props))
-            # print locators
-
-    def _decode_find_result(self, result):
-        path              = urllib.unquote(result.get('path', ''))
-        valid_path_part   = urllib.unquote(result.get('valid_path_part', ''))
-        invalid_path_part = urllib.unquote(result.get('invalid_path_part', ''))
-        elements          = result.get('elements', [])
-        for i, item in enumerate(elements): elements[i]['attributes'] = urllib.unquote(item.get('attributes'))
-        result.update({'path':path, 'valid_path_part':valid_path_part, 'invalid_path_part':invalid_path_part, 'elements':elements})
-        return result
+        if isinstance(_locator, basestring) and not _locator.startswith('/'): #默认为_locator为id
+            self.strategy = 'id'
+        else:
+            self.strategy = 'qpath'
 
     def _find(self, parent_id=None):
         print '--- ' * 9
         print 'locator : %s' % self._locator
         print 'timeout : %s' % self.timeout.timeout
         # --- --- --- --- --- --- --- --- ---
-        result = self._decode_find_result(self._app.driver.uia.element.find_elements(self._app.device.udid, (str(self._locator) if self._locator else None), self.timeout.timeout, self.timeout.interval, 'qpath', parent_id))
+        result = self._app.driver.element.find_elements((str(self._locator) if self._locator else None), self.timeout.timeout, self.timeout.interval, self.strategy, parent_id)
         elements = result.get('elements', [])
         element = elements[0].get('element') if len(elements)>0 else None
         # --- --- --- --- --- --- --- --- ---
-        if element: print 'element : 耗时[%s]毫秒尝试了[%s]次查找到[ element id: %s ]' % (result.get('find_time'), result.get('find_count'), element)
-        # --- --- --- --- --- --- --- --- ---
         if element is None:
-            err_msg  = '\n未找到控件 : 耗时[%s]毫秒尝试了[%s]次查找 [%s]' % (result.get('find_time'), result.get('find_count'), self._locator)
-            err_msg += '\n有效Path  : %s' % result.get('valid_path_part')
-            err_msg += '\n无效Path  : %s' % result.get('invalid_path_part')
-            err_msg += '\nControlNotFoundError 建议用 device.print_uitree() 重新分析UI树'
+            if self.strategy == "id":
+                err_msg  = '\n未找到控件 : 耗时[%s]毫秒尝试了[%s]次查找 [%s]' % (result.get('find_time'), result.get('find_count'), self._locator)
+                err_msg += '\n无效控件ID : %s' % self._locator
+                err_msg += '\nControlNotFoundError 建议用 device.print_uitree() 重新分析UI树'
+            else:                
+                err_msg  = '\n未找到控件 : 耗时[%s]毫秒尝试了[%s]次查找 [%s]' % (result.get('find_time'), result.get('find_count'), self._locator)
+                err_msg += '\n有效Path  : %s' % result.get('valid_path_part')
+                err_msg += '\n无效Path  : %s' % result.get('invalid_path_part')
+                err_msg += '\nControlNotFoundError 建议用 device.print_uitree() 重新分析UI树'
             raise ControlNotFoundError(err_msg)
-        # --- --- --- --- --- --- --- --- ---
-        # 有较多脚本中的父窗口封装 /classname='UIAWindow' 没有使用 instance，暂不启用 --- cherry
-        # if len(elements) > 1 :
-        #     err_msg = '\n找到多个控件: 耗时[%s]毫秒尝试了[%s]次查找，找到[%s]个控件' % (result.get('find_time'), result.get('find_count'), len(elements))
-        #     for item in elements: err_msg += '\n  %s' % item.get('attributes')
-        #     err_msg += '\nControlAmbiguousError 建议用 device.print_uitree() 重新分析UI树'
-        #     raise ControlAmbiguousError(err_msg)
-        # --- --- --- --- --- --- --- --- ---
+        if len(elements) > 1 and not INS_IOS_DRIVER:
+            err_msg = '\n找到多个控件: 耗时[%s]毫秒尝试了[%s]次查找，找到[%s]个控件' % (result.get('find_time'), result.get('find_count'), len(elements))
+            for e in elements: err_msg += '\n  %s' % e
+            err_msg += '\nControlAmbiguousError 建议用 device.print_uitree() 重新分析UI树'
+            raise ControlAmbiguousError(err_msg)
+        print 'element : 耗时[%s]毫秒尝试了[%s]次查找到[ element id: %s ]' % (result.get('find_time'), result.get('find_count'), element)
         return element
 
     def _init_element(self):
@@ -250,15 +231,19 @@ class Element(ControlContainer):
         if not isinstance(_id, int): raise Exception('element is invalid')
         self._element = _Element(_id)
         return self._element
+    
 
     def exist(self):
         '''控件是否存在
         
-        :return: boolean
+        :rtype: boolean
         '''
-        try                           : return bool(self._init_element())
-        except xmlrpclib.Fault as err : raise err
-        except Exception as err       : return False
+        try:
+            return bool(self._init_element())
+        except xmlrpclib.Fault as err:
+            raise err
+        except Exception as err:
+            print err
         return False
 
     def wait_for_exist(self, timeout, interval):
@@ -268,7 +253,7 @@ class Element(ControlContainer):
         :type timeout: float
         :param interval: 轮询值（秒），轮询值建议 0.005 秒
         :type interval: float
-        :return: boolean
+        :rtype: boolean
         '''
         self.timeout = Timeout(timeout, interval)
         return self.exist()
@@ -278,12 +263,15 @@ class Element(ControlContainer):
         
         :param locator: 相对当前对象的 - 子Path对象 或 子Path字符串 （搜索的起点为当前父对象）
         :type locator: QPath | str
-        :return: list: [Element, ...]
+        :return: [Element, ...]
+        :rtype: list
         '''
         if not isinstance(locator, (QPath, basestring)): raise Exception('find_elements(path) path is invalid')
-        self._check_locator(locator)
+        strategy = 'qpath'
+        if isinstance(locator, basestring) and not locator.startswith('/'):
+            strategy = 'id'
         elements = []
-        result = self._decode_find_result(self._app.driver.uia.element.find_elements(self._app.device.udid, str(locator), self.timeout.timeout, self.timeout.interval, 'qpath', self._element.id))
+        result = self._app.driver.element.find_elements(str(locator), self.timeout.timeout, self.timeout.interval, strategy, self._element.id)
         found_elements = result.get('elements', [])
         for item in found_elements: elements.append(Element(root=self, locator=item.get('element')))
         return elements
@@ -293,9 +281,9 @@ class Element(ControlContainer):
         
         :param name: 子控件的name
         :type name: str
-        :return: Element or None
+        :rtype: Element or None
         '''
-        _id = self._app.driver.uia.element.first_with_name(self._app.device.udid, self._element.id, name)
+        _id = self._app.driver.element.find_element_with_value_for_key(self._element.id, 'name', name)
         if isinstance(_id, int): return Element(root=self, locator=_id)
 
     def with_name(self, name):
@@ -303,10 +291,10 @@ class Element(ControlContainer):
         
         :param name: 子控件的name
         :type name: str
-        :return: list
+        :rtype: list
         '''
         children = []
-        children_id = self._app.driver.uia.element.with_name(self._app.device.udid, self._element.id, name)
+        children_id = self._app.driver.element.find_elements_with_value_for_key(self._element.id, 'name', name)
         for child_id in children_id: children.append(Element(root=self, locator=child_id))
         return children
 
@@ -315,19 +303,19 @@ class Element(ControlContainer):
         
         :param predicate: 预期子element的predicate （例如：“name beginswith 'xxx'”）
         :type predicate: str
-        :return: Element or None
+        :rtype: Element or None
         '''
-        _id = self._app.driver.uia.element.first_with_predicate(self._app.device.udid, self._element.id, predicate)
+        _id = self._app.driver.element.find_element_with_predicate(self._element.id, predicate)
         if isinstance(_id, int): return Element(root=self, locator=_id)
 
     def with_predicate(self, predicate):
         '''通过predicate文本获取第一个匹配的子element
         :param predicate: 预期子element的predicate （例如：“name beginswith 'xxx'”）
         :type predicate: str
-        :return: Element or None
+        :rtype: Element or None
         '''
         children = []
-        children_id = self._app.driver.uia.element.with_predicate(self._app.device.udid, self._element.id, predicate)
+        children_id = self._app.driver.element.find_elements_with_predicate(self._element.id, predicate)
         for child_id in children_id: children.append(Element(root=self, locator=child_id))
         return children
 
@@ -337,23 +325,23 @@ class Element(ControlContainer):
         :param key: key （例如：label、name、value）
         :type key: str
         :param value: 对应key的value值
-        :type value: value
-        :return: Element or None
+        :type value: str or int
+        :rtype: Element or None
         '''
-        _id = self._app.driver.uia.element.first_with_value_for_key(self._app.device.udid, self._element.id, key, value)
+        _id = self._app.driver.element.find_element_with_value_for_key(self._element.id, key, value)
         if isinstance(_id, int): return Element(root=self, locator=_id)
 
     def with_value_for_key(self, key, value):
-        '''通过匹配指定key的value，获取第一个匹配的子element
+        '''通过匹配指定key的value，获取所有匹配的子element
         
         :param key: key （例如：label、name、value）
         :type key: str
         :param value: 对应key的value值
-        :type value: value
-        :return: Element or None
+        :type value: str or int
+        :rtype: Element or None
         '''
         children = []
-        children_id = self._app.driver.uia.element.with_value_for_key(self._app.device.udid, self._element.id, key, value)
+        children_id = self._app.driver.element.find_elements_with_value_for_key(self._element.id, key, value)
         for child_id in children_id: children.append(Element(root=self, locator=child_id))
         return children
 
@@ -361,62 +349,65 @@ class Element(ControlContainer):
     def children(self):
         '''获取子控件（仅含相对本控件的第二层子控件，不含第三层以及更深层的子控件，建议用此方法解决动态Path的场景）
         
-        :return: list: [Element, ...]
+        :return: [Element, ...]
+        :rtype: list
         '''
         children = []
-        children_id = self._app.driver.uia.element.get_children(self._app.device.udid, self._element.id)
+        children_id = self._app.driver.element.get_children_elements(self._element.id)
         for child_id in children_id:
             children.append(Element(root=self, locator=child_id))
         return children
     
+    @property
+    def parent(self):
+        '''获取上一级的父控件
+        
+        :rtype: Element
+        '''
+        _id = self._app.driver.element.get_parent_element(self._element.id)
+        if isinstance(_id, int): return Element(root=self, locator=_id)      
+    
     def _get_attr(self, attr_name):
         '''获取控件的属性
         '''
-        return self._app.driver.uia.element.get_attr(self._app.device.udid, self._element.id, attr_name)
+        return self._app.driver.element.get_element_attr(self._element.id, attr_name)
     
     def get_attr_dict(self):
         '''获取元素的属性信息，返回字典
         
-        :return: dict
+        :rtype: dict
         '''
-        _data = urllib.unquote(self._app.driver.uia.element.get_element_dict(self._app.device.udid, self._element.id))
-        _data = _data.replace('\r', '\\r')
-        _data = _data.replace('\n', '\\n')
-        _data = eval(_data)
-        return _data
+        return self._app.driver.element.get_element_attrs(self._element.id)
     
     @property  
     def label(self):
-        '''控件的label(可能有特殊字符超出Python解码为UTF-8的范围)
+        '''控件的label
         
-        :rtype: None | str
+        :rtype: str or None
         '''
-        label = self.get_attr_dict()['label']
-        return label
+        return self._get_attr('label')
     
     @property  
     def name(self):
-        '''控件的name(可能有特殊字符超出Python解码为UTF-8的范围)
+        '''控件的name
         
-        :rtype: None | str
+        :rtype: str or None
         '''
-        name = self.get_attr_dict()['name']
-        return name
+        return self._get_attr('name')
     
     @property  
     def value(self):
-        '''控件的value(可能有特殊字符超出Python解码为UTF-8的范围)
+        '''控件的value
         
         :rtype: None | str
         '''
-        value = self.get_attr_dict()['value']
-        return value
+        return self._get_attr('value')
     
     @value.setter
     def value(self, value):
         '''设置value(输入，支持中文)
         '''
-        self._app.driver.uia.element.set_value(self._app.device.udid, self._element.id, value)
+        self._app.driver.element.set_value(self._element.id, value)
     
     @property  
     def visible(self):  
@@ -434,52 +425,50 @@ class Element(ControlContainer):
         ''' 
         return self._get_attr('enabled')
     
-    @property  
-    def valid(self):
-        '''控件是否有效（此接口会抛出异常，暂时不处理，以上层应用为主）
-        
-        :rtype: boolean
-        '''
-        return self._get_attr('valid')
-        
-    @property  
-    def focused(self):
-        '''控件的焦点状态
-        
-        :rtype: boolean
-        '''
-        return self._get_attr('focus')
-    
     @property
     def rect(self):
         '''控件的矩形信息
         
         :rtype: Rectangle
         '''
-        rect = self._app.driver.uia.element.get_rect(self._app.device.udid, self._element.id)
+        rect = self._app.driver.element.get_rect(self._element.id)
         origin = rect['origin']
         size = rect['size']
         return Rectangle(origin['x'], origin['y'], origin['x'] + size['width'], origin['y'] + size['height'])
-    
+
     def send_keys(self, keys):
         '''输入字符串
+
         :param keys: 字符串内容
         :type keys: str        
         :attention: 该接口不支持中文，中文输入请使用value='中文'
         '''
-        self._app.driver.uia.element.sent_keys(self._app.device.udid, self._element.id, keys)
+        self._app.driver.element.send_keys(self._element.id, keys)
     
-    def scroll_to_visible(self):
+    def scroll_to_visible(self, rate=1.0, drag_times=20):
         '''自动滚动到元素可见（技巧: Path中不写visible=true，当对象在屏幕可视范围之外，例如底部，调用此方法可以自动滚动到该元素为可见）
+        
+        :param drag_times: 最多尝试下滑次数，默认20次
+        :type drag_times: int
         '''
-        self._app.driver.uia.element.scroll_to_visible(self._app.device.udid, self._element.id)
+        try:
+            self._app.driver.element.scroll_to_visible(self._element.id, rate)
+        except Exception:
+                err = traceback.format_exc()
+                if 'has no scrollable ancestor' not in err:
+                    raise
         if not self.visible:  #兼容UIAutomation框架中scrollToVisible失效的场景
-            if self.rect.top < 0:
-                d = (0.5, 0.42, 0.5 ,0.6)
-            else:
-                d = (0.5, 0.6, 0.5 ,0.42)
-            for _ in xrange(10):
-                self._app.device.flick(d[0], d[1], d[2], d[3])
+            for _ in xrange(drag_times):
+                rate = self.rect.top / self._app.device.rect.height
+                if rate > 1:
+                    self._app.driver.device.drag(0.5, 0.6, 0.5 ,0.4)
+                elif rate < -1:
+                    self._app.driver.device.drag(0.5, 0.4, 0.5 ,0.6)
+                elif rate >= -1 and rate < 0.5: 
+                    self._app.driver.device.drag(0.5, 0.45, 0.5 ,0.55)
+                elif rate >= 0.5 and rate <= 1: 
+                    self._app.driver.device.drag(0.5, 0.55, 0.5 ,0.45)
+                time.sleep(0.3)
                 if self.visible:
                     break
             else:
@@ -489,29 +478,34 @@ class Element(ControlContainer):
         '''点击控件
         
         :param offset_x: 相对于该控件的坐标offset_x，百分比( 0 -> 1 )，不传入则默认该控件的中央
-        :type offset_x: float|None
+        :type offset_x: float or None
         :param offset_y: 相对于该控件的坐标offset_y，百分比( 0 -> 1 )，不传入则默认该控件的中央
-        :type offset_y: float|None
+        :type offset_y: float or None
         '''
-        self._app.driver.uia.element.click(self._app.device.udid, self._element.id, offset_x, offset_y)
+        self._app.driver.element.click(self._element.id, offset_x, offset_y)
     
-    def double_click(self):
+    def double_click(self, offset_x=0.5, offset_y=0.5):
         '''双击控件
+        
+        :param offset_x: 相对于该控件的坐标offset_x，百分比( 0 -> 1 )，不传入则默认该控件的中央
+        :type offset_x: float
+        :param offset_y: 相对于该控件的坐标offset_y，百分比( 0 -> 1 )，不传入则默认该控件的中央
+        :type offset_y: float
         '''
-        self._app.driver.uia.element.double_click(self._app.device.udid, self._element.id)
+        self._app.driver.element.double_click(self._element.id, offset_x, offset_y)
     
-    def long_click(self, duration=3):
+    def long_click(self, duration=3, offset_x=0.5, offset_y=0.5):
         '''单指长按
         
         :param duration: 持续时间（秒）
         :type duration: int
+        :param offset_x: 相对于该控件的坐标offset_x，百分比( 0 -> 1 )，不传入则默认该控件的中央
+        :type offset_x: float
+        :param offset_y: 相对于该控件的坐标offset_y，百分比( 0 -> 1 )，不传入则默认该控件的中央
+        :type offset_y: float
         '''
-        options = {'tapCount'     : 1,
-                   'touchCount'   : 1,
-                   'duration'     : duration,
-                   'tapOffset'    : {'x':  0.5, 'y':  0.5}}
-        self._tap_with_options(options)
-    
+        self._app.driver.element.long_click(self._element.id, offset_x, offset_y, duration)
+        
     def _tap_with_options(self, options={}):
         '''自定义点击(默认单指点击一次控件的中央)
         
@@ -530,31 +524,9 @@ class Element(ControlContainer):
                                    'x' : options.get('tapOffset', {}).get('x', 0.5),
                                    'y' : options.get('tapOffset', {}).get('y', 0.5)
                                   }}
-        self._app.driver.uia.element.tap_with_options(self._app.device.udid, self._element.id, options)
+        self._app.driver.element.click(self._element.id, None, None, options)
     
-    def _touch_and_hold(self, duration):
-        '''按住
-        
-        :param duration: 秒
-        :type duration: int
-        '''
-        self._app.driver.uia.element.touch_and_hold(self._app.device.udid, self._element.id, duration)
-    
-    def _drag_inside_with_options(self, options):
-        '''在控件体内拖拽（注意：如有过场动画，需要等待动画完毕）
-           建议使用drag或drag2
-        '''
-        options = {'touchCount'  : options.get('touchCount', 1),  # 触摸点（iPhone最多4个手指，iPad可以五个手指）
-                   'duration'    : options.get('duration', 0.5),  # 时间
-                   'startOffset' : {'x': options.get('startOffset', {}).get('x'),
-                                    'y': options.get('startOffset', {}).get('y')},
-                   'endOffset'   : {'x': options.get('endOffset', {}).get('x'),
-                                    'y': options.get('endOffset', {}).get('y')},
-                   'repeat'      : options.get('repeat', 1),
-                   'interval'    : options.get('interval', 0)}
-        self._app.driver.uia.element.drag_inside_with_options(self._app.device.udid, self._element.id, options)
-    
-    def drag(self, from_x=0.9, from_y=0.5, to_x=0.1, to_y=0.5, touchCount=1, duration=0.5, repeat=1, interval=0):
+    def drag(self, from_x=0.9, from_y=0.5, to_x=0.1, to_y=0.5, duration=0.5):
         '''回避控件边缘，在控件体内拖拽（默认在控件内从右向左拖拽）
         
         :param from_x: 起点 x偏移百分比（从左至右为0.0至1.0）
@@ -565,22 +537,10 @@ class Element(ControlContainer):
         :type to_x: float
         :param to_y: 终点 y偏移百分比（从上至下为0.0至1.0）
         :type to_y: float
-        :param touchCount: 触摸点（iPhone最多4个手指，iPad可以五个手指）
-        :type touchCount: int
         :param duration: 持续时间（秒）
         :type duration: float
-        :param repeat: 重复该操作
-        :type repeat: int
-        :param interval: 重复该操作的间隙时间（秒）
-        :type interval: float
         '''
-        self._drag_inside_with_options({
-            'touchCount'    : touchCount or 1,
-            'duration'      : duration or 0.5,
-            'startOffset'   : {'x': from_x, 'y': from_y},
-            'endOffset'     : {'x': to_x,   'y': to_y},
-            'repeat'        : repeat or 1,
-            'interval'      : interval or 0})
+        self._app.driver.element.drag(self._element.id, from_x, from_y, to_x, to_y, duration)
     
     def drag2(self, direct=EnumDirect.Left):
         '''回避边缘在控件体内拖拽
@@ -588,25 +548,12 @@ class Element(ControlContainer):
         :param direct: 拖拽的方向
         :type  direct: EnumDirect.Left|EnumDirect.Right|EnumDirect.Up|EnumDirect.Down
         '''
-        if direct == EnumDirect.Left  : self._app.driver.uia.element.drag_inside_right_to_left(self._app.device.udid, self._element.id)
-        if direct == EnumDirect.Right : self._app.driver.uia.element.drag_inside_left_to_right(self._app.device.udid, self._element.id)
-        if direct == EnumDirect.Up    : self._app.driver.uia.element.drag_inside_down_to_up(self._app.device.udid, self._element.id)
-        if direct == EnumDirect.Down  : self._app.driver.uia.element.drag_inside_up_to_down(self._app.device.udid, self._element.id)
+        if direct == EnumDirect.Left  : self._app.driver.element.drag(self._element.id, 0.5, 0.5, 0.1, 0.5, 0.5)
+        if direct == EnumDirect.Right : self._app.driver.element.drag(self._element.id, 0.5, 0.5, 0.9, 0.5, 0.5)
+        if direct == EnumDirect.Up    : self._app.driver.element.drag(self._element.id, 0.5, 0.5, 0.5, 0.1, 0.5)
+        if direct == EnumDirect.Down  : self._app.driver.element.drag(self._element.id, 0.5, 0.5, 0.5, 0.9, 0.5)
     
-    def _flick_inside_with_options(self, options):
-        '''滑动/拂去，该接口比drag的滑动速度快，如果滚动距离大，建议用此接口
-           除非多手指操作，建议使用flick方法或flick2方法
-        '''
-        options = {'touchCount'  : options.get('touchCount', 1),  # 触摸点（iPhone最多4个手指，iPad可以五个手指）
-                   'startOffset' : {'x': options.get('startOffset', {}).get('x', 0.9),
-                                    'y': options.get('startOffset', {}).get('y', 0.5)},
-                   'endOffset'   : {'x': options.get('endOffset', {}).get('x', 0.1),
-                                    'y': options.get('endOffset', {}).get('y', 0.5)},
-                   'repeat'      : options.get('repeat', 1),
-                   'interval'    : options.get('interval', 0)}
-        self._app.driver.uia.element.flick_inside_with_options(self._app.device.udid, self._element.id, options)
-    
-    def flick(self, from_x=0.9, from_y=0.5, to_x=0.1, to_y=0.5, touchCount=1, repeat=1, interval=0):
+    def flick(self, from_x=0.9, from_y=0.5, to_x=0.1, to_y=0.5):
         '''滑动/拂去（默认从右向左回避边缘进行滑动/拂去）该接口比drag的滑动速度快，如果滚动距离大，建议用此接口
         
         :param from_x: 起点 x偏移百分比（从左至右为0.0至1.0）
@@ -617,19 +564,8 @@ class Element(ControlContainer):
         :type to_x: float
         :param to_y: 终点 y偏移百分比（从上至下为0.0至1.0）
         :type to_y: float
-        :param touchCount: 触摸点（iPhone最多4个手指，iPad可以五个手指）
-        :type touchCount: int
-        :param repeat: 重复该操作
-        :type repeat: int
-        :param interval: 重复该操作的间隙时间（秒）
-        :type interval: float
         '''
-        self._flick_inside_with_options({
-            'touchCount'    : touchCount or 1,
-            'startOffset'   : {'x': from_x, 'y': from_y},
-            'endOffset'     : {'x': to_x,   'y': to_y},
-            'repeat'        : repeat or 1,
-            'interval'      : interval or 0})
+        self._app.driver.element.drag(self._element.id, from_x, from_y, to_x, to_y, 0)
     
     def flick2(self, direct=EnumDirect.Left):
         '''回避边缘在控件体内滑动/拂去
@@ -637,35 +573,45 @@ class Element(ControlContainer):
         :param direct: 滑动/拂去的方向
         :type  direct: EnumDirect.Left|EnumDirect.Right|EnumDirect.Up|EnumDirect.Down
         '''
-        if direct == EnumDirect.Left  : self._app.driver.uia.element.flick_inside_right_to_left(self._app.device.udid, self._element.id)
-        if direct == EnumDirect.Right : self._app.driver.uia.element.flick_inside_left_to_right(self._app.device.udid, self._element.id)
-        if direct == EnumDirect.Up    : self._app.driver.uia.element.flick_inside_down_to_up(self._app.device.udid, self._element.id)
-        if direct == EnumDirect.Down  : self._app.driver.uia.element.flick_inside_up_to_down(self._app.device.udid, self._element.id)
+        if direct == EnumDirect.Left  : self._app.driver.element.drag(self._element.id, 0.5, 0.5, 0.1, 0.5, 0)
+        if direct == EnumDirect.Right : self._app.driver.element.drag(self._element.id, 0.5, 0.5, 0.9, 0.5, 0)
+        if direct == EnumDirect.Up    : self._app.driver.element.drag(self._element.id, 0.5, 0.5, 0.5, 0.1, 0)
+        if direct == EnumDirect.Down  : self._app.driver.element.drag(self._element.id, 0.5, 0.5, 0.5, 0.9, 0)
     
-    def capture(self):
-        '''截图（范围是该控件，可用于发送图片校验MD5或二维码）
+    def screenshot(self, image_path=None, image_type=None):
+        '''截屏
         
-        :attention: 所有截图统一只支持png格式
-        :return: 截图后存储至默认路径（默认路径内存储的图片每次重启都会被清空，请在用例生命周期内取走或完成图片的使用）。
+        :attention: 裁剪图像使用了PIL库，使用该接口请安装Pillow，如下：pip install Pillow
+        :param image_path: 截屏图片的存放路径
+        :type image_path: str
+        :param image_path: 截屏图片的存放路径
+        :type image_path: str
+        :return: 截屏结果和截屏文件的路径
+        :rtype: tuple (boolean, str)
         '''
-        return self._app.driver.uia.element.capture(self._app.device.udid, self._element.id)
-    
-    def wait_for_invalid(self, timeout=5):
-        '''等待对象到无效
-        
-        :param timeout: 等待时间（秒）
-        :type timeout: int
-        :return: boolean - True表示对象还有效 | False表示对象已无效（如再进行任何操作则抛出异常）
-        '''
-        return self._app.driver.uia.element.wait_for_invalid(self._app.device.udid, self._element.id, timeout)
+        base64_img = self._app.driver.device.capture_screen()
+        device_img_data = base64.decodestring(base64_img)
+        from PIL import Image
+        image_fd = StringIO.StringIO(device_img_data)
+        img = Image.open(image_fd)
+        scale_x = self._app.driver.device.get_rect()['size']['width']*1.0/img.size[0]
+        scale_y = self._app.driver.device.get_rect()['size']['height']*1.0/img.size[1]
+        rect = self.rect
+        rect = (rect.left/scale_x, rect.top/scale_y, rect.right/scale_x, rect.bottom/scale_y)
+        import math
+        rect = (math.floor(rect[0]), math.floor(rect[1]), math.floor(rect[2]), math.floor(rect[3]))
+        element_img = img.crop(rect)
+        if image_type == 'Pil.Image':
+            return element_img
+        if not image_path:
+            image_path = os.path.join(QT4i_LOGS_PATH, "p%s_%s.png" %(os.getpid(), uuid.uuid1()))
+        element_img.save(os.path.realpath(image_path))
+        return (os.path.isfile(image_path), image_path)
 
     def print_uitree(self):
         '''打印当前控件的UI树
         '''
-        _ui_tree = urllib.unquote(self._app.driver.uia.element.get_element_tree(self._app.device.udid, self._element.id))
-        _ui_tree = _ui_tree.replace('\r', '\\r')
-        _ui_tree = _ui_tree.replace('\n', '\\n')
-        _ui_tree = eval(_ui_tree)
+        _ui_tree = self._app.driver.element.get_element_tree(self._element.id)
         def _print(_tree, _spaces='', _indent='|---'):
             _line = _spaces + '{  ' + ',   '.join([
                 'classname: "%s"' % _tree['classname'],
@@ -674,36 +620,33 @@ class Element(ControlContainer):
                 'value: %s' % ('"%s"' % _tree['value'] if _tree['value'] else 'null'),
                 'visible: %s' % ('true' if _tree['visible'] else 'false'),
                 'enabled: %s' % ('true' if _tree['enabled'] else 'false'),
-                'valid: %s' % ('true' if _tree['valid'] else 'false'),
-                'focus: %s' % ('true' if _tree['focus'] else 'false'),
                 'rect: %s' % _tree['rect']]) + '  }'
             print _line
             for _child in _tree['children']: _print(_child, _spaces + _indent, _indent)
         _print(_ui_tree)
+   
+    def get_metis_view(self):
+        '''返回MetisView
+        '''
+        return MetisView(self)
 
-# -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 
 class Window(Element):
-    '''Window概念
+    '''窗口基类
     '''
-    def __init__(self, root, locator=None):
-        Element.__init__(self, root, (locator if locator else 1))
+    def __init__(self, root, locator=None, **ext):
+        Element.__init__(self, root, (locator if locator else 1), **ext)
+        
 
-# -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
-
-class Alert(Window):
+class Alert(Element):
     '''弹出框
     
     由于弹出框在iOS不同版本中的UI逻辑不一致（QPath不同），但业务逻辑相对统一（确定/取消），故单独封装成一个类
-    默认是iPhone最新版本的处理逻辑
     '''
-    #
-    # 20150504 cherry 重构Alert
-    #
-    def __init__(self, root, locator=QPath("/classname='UIAWindow'/classname='UIAAlert'")):
-        Window.__init__(self, root=root, locator=locator)
+    
+    def __init__(self, root, locator= QPath("/classname='UIAAlert' & maxdepth = 20"), **ext):
+        Element.__init__(self, root=root, locator=locator, **ext)
         self._ios_version = self._app.device.ios_version
-        self._ios_type = self._app.device.ios_type
         self._title = None
         self._buttons = []
 
@@ -711,32 +654,29 @@ class Alert(Window):
     def title(self):
         '''提示文本内容
         '''
-        # -*- iOS6
-        if re.search('^6', self._ios_version) : self._title = Element(root=self, locator=QPath("/classname='UIAStaticText' && visible=true"))
-        else                                  : self._title = Element(root=self, locator=QPath("/classname='UIAScrollView'/classname='UIAStaticText' && visible=true"))
-        # -*-
-        if self._title is not None            : return self._title
-        # -*-
+        if INS_IOS_DRIVER:
+            self._title = Element(root=self, locator=QPath("/classname='UIAScrollView'/classname='UIAStaticText' && visible=true"))
+        else:
+            self._title = Element(root=self, locator=QPath("/classname='StaticText' & visible=true & maxdepth=10"))
+            
+        if self._title is not None: 
+            return self._title
         raise Exception('未找到有效标题，请检查Alert类内的子对象是否正确的QPath')
 
     @property
     def buttons(self):
         '''Alert控件上的所有按钮
         '''
-        # -*- iOS8
-        if re.search('^[8|9]', self._ios_version):
-            self._buttons = self.find_elements(QPath("/classname='UIACollectionView'/classname='UIACollectionCell'/classname='UIAButton' && visible=true"))
-            if len(self._buttons) == 0: self._buttons = self.find_elements(QPath("/classname='UIACollectionView'/classname='UIACollectionCell' && visible=true"))
-            # 避免性能测试使用libimobiledevice
-            # if self._ios_type == Device.EnumDeviceType.iPad : self._buttons = self.find_elements(QPath("/classname='UIACollectionView'/classname='UIACollectionCell'/classname='UIAButton' && visible=true"))
-            # else                                            : self._buttons = self.find_elements(QPath("/classname='UIACollectionView'/classname='UIACollectionCell' && visible=true"))
-        # -*- iOS7
-        if re.search('^7', self._ios_version)               : self._buttons = self.find_elements(QPath("/classname='UIATableView'/classname='UIATableCell' && visible=true"))
-        # -*- iOS6
-        if re.search('^6', self._ios_version)               : self._buttons = self.find_elements("/classname='UIAButton' && visible=true")
-        # -*-
+        if INS_IOS_DRIVER:
+            if re.search('^[8|9]', self._ios_version):
+                self._buttons = self.find_elements(QPath("/classname='UIACollectionView'/classname='UIACollectionCell'/classname='UIAButton' && visible=true"))
+            elif re.search('^7', self._ios_version):
+                self._buttons = self.find_elements(QPath("/classname='UIATableView'/classname='UIATableCell' && visible=true"))
+            if len(self._buttons) == 0: 
+                self._buttons = self.find_elements(QPath("/classname='UIACollectionView'/classname='UIACollectionCell' && visible=true"))
+        else:
+            self._buttons = self.find_elements(QPath("/classname='Button' & visible=true & maxdepth=10"))
         if len(self._buttons) > 0                           : return self._buttons
-        # -*-
         raise Exception('未找到有效按钮，请检查Alert类内的子对象是否正确的QPath')
 
     def click_button(self, text):
@@ -757,24 +697,32 @@ class Alert(Window):
         raise Exception('未有效匹配按钮，请检查指定的字符串是否命中预期')
 
     
-class Slider(Window):
+class Slider(Element):
     '''进度条
     '''
-    def __init__(self, root, locator=QPath("/classname='UIAWindow'/classname='UIAImage'/classname='UIASlider' && visible=true")):
-        Window.__init__(self, root=root, locator=locator)
+    
+    def __init__(self, root, locator=QPath("/classname='UIASlider' & maxdepth = 20"), **ext):
+        Element.__init__(self, root=root, locator=locator, **ext)
         self._ios_version = self._app.device.ios_version
     
     @Window.value.setter
     def value(self, value):
         '''设置进度条的值(取值0~1之间)
         '''
-        self._app.driver.uia.element.drag_to_value(self._app.device.udid, self._element.id, value)
+        self._app.driver.element.drag_to_value(self._element.id, value)
+
         
-class ActionSheet(Window): 
+class ActionSheet(Element): 
     '''UIActionSheet弹出框
     '''
-    def __init__(self, root, locator=QPath("/classname='UIAWindow'/classname='UIAActionSheet'")):
-        Window.__init__(self, root=root, locator=locator)
+    
+    def __init__(self, root, locator=None, **ext):
+        if locator is None:
+            if INS_IOS_DRIVER:
+                locator =  QPath("/classname='UIAWindow'/classname='UIAActionSheet'")    
+            else:
+                locator =  QPath("/classname='Sheet' & maxdepth = 20") 
+        Element.__init__(self, root=root, locator=locator, **ext)
         self._ios_version = self._app.device.ios_version  
         self._buttons = []
     
@@ -782,13 +730,16 @@ class ActionSheet(Window):
     def buttons(self):  
         '''ActionSheet上面的所有按钮
         '''
-        if re.search('^7', self._ios_version):
-            self._buttons = self.find_elements(QPath("/classname='UIAButton' && visible=true"))
+        if INS_IOS_DRIVER:
+            if re.search('^7', self._ios_version):
+                self._buttons = self.find_elements(QPath("/classname='UIAButton' && visible=true"))
+            else:
+                self._buttons = self.find_elements(QPath("/classname='UIACollectionView'/classname='UIACollectionCell'/classname='UIAButton' && visible=true"))
+                other_buttons = self.find_elements(QPath("/classname='UIAButton' && visible=true"))
+                if other_buttons:
+                    self._buttons.extend(other_buttons)
         else:
-            self._buttons = self.find_elements(QPath("/classname='UIACollectionView'/classname='UIACollectionCell'/classname='UIAButton' && visible=true"))
-            other_buttons = self.find_elements(QPath("/classname='UIAButton' && visible=true"))
-            if other_buttons:
-                self._buttons.extend(other_buttons)
+            self._buttons = self.find_elements(QPath("/classname='Button' & visible=true & maxdepth=10"))
         
         if len(self._buttons) > 0:
             return self._buttons
@@ -810,48 +761,145 @@ class ActionSheet(Window):
                 button.click()
                 return
         raise Exception('未有效匹配按钮，请检查指定的字符串是否命中预期')            
-          
 
-# -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 
-if __name__ == '__main__':
+class TableView(Element):
+    '''TableView控件
+    '''
+    
+    def __init__(self, root, locator=None, **ext):
+        if locator is None:
+            if INS_IOS_DRIVER:
+                locator =  QPath("/classname='UIAWindow'/classname='UIATableView'")    
+            else:
+                locator =  QPath("/classname='Table' & maxdepth = 20")
+        Element.__init__(self, root, locator, **ext)
+        if isinstance(root, Window):
+            for key, value in root._locators.iteritems():
+                print 'locator:', key
+                if value['root'] == '@%s' % self.user_name:
+                    self.updateLocator({key:value})
+        self._cells = []
+        
+    
+    @property
+    def cells(self):
+        if INS_IOS_DRIVER:
+            self._cells = self.find_elements("/classname='UIATableCell'")
+        else:
+            self._cells = self.find_elements("/classname='Cell'")
+        
+        if len(self._cells) > 0:
+            return self._cells      
+        raise RuntimeError('未找到有效TableCell，请检查TableView类内的控件QPath是否正确')
+    
+    def click_cell(self, text):
+        for cell in self.cells:
+            if text in cell.name: # 考虑效率问题，目前只查找name
+                if not cell.visible:
+                    cell.scroll_to_visible()
+                cell.click()
+                return 
+        raise RuntimeError('未找到指定TableCell:%s' % text)
+    
+    def __iter__(self):
+        for cell in self.cells:
+            yield Cell(cell, self._locators)
 
-    # Demo
-    # -*- -*- -*- -*- -*- -*-
 
-    class LoginWin(Window):
-        '''登录窗口
+class Cell(object):
+    '''TableCell控件
+    '''
+    def __init__(self, element, locators={}):
+        self._element = element
+        for key in locators:
+            locators[key]['root'] = self._element
+        self._element.updateLocator(locators)
+        
+    def __getattr__(self, attr):
+        return getattr(self._element, attr) 
+    
+
+class Button(Element):
+    '''Button控件
+    '''
+
+    
+class TextField(Element):
+    '''文本输入框
+    '''
+    
+    
+class SecureTextField(Element):
+    '''密码输入框
+    '''
+    
+    
+class PickerWheel(Element):
+    '''滚轮选择框
+    '''
+    
+    def select(self, value):
+        self._app.driver.element.select_picker_wheel(self._element.id, value)
+
+        
+class MetisView(object):
+    '''MetisView
+    '''
+    def __init__(self, element):
+        self.element = element
+        if isinstance(self.element, Element):
+            img = self.element.screenshot(image_type='Pil.Image')
+            real_width = img.size[0]
+            real_height = img.size[1]
+            rect = self.element.rect
+            self._dx = real_width*1.0/rect.width
+            self._dy = real_height*1.0/rect.height
+
+    @property
+    def rect(self):
+        '''元素相对坐标(x, y, w, h)
         '''
-        def __init__(self, root, locator=QPath("/classname='UIAWindow'")):
-            Window.__init__(self, root=root, locator=locator)
-            self.updateLocator({
-                'UIATableCell': {'type':Element, 'root': self,            'locator':QPath("/classname='UIATableCell'")},
-                '帐号框'       : {'type':Element, 'root': '@UIATableCell', 'locator':QPath("/classname='UIATextField' && name~='QQ号' && visible=true")},
-                "密码框"       : {'type':Element, 'root': '@UIATableCell', 'locator':QPath("/classname='UIASecureTextField' && label~='密码' && visible=true")},
-                "登陆按钮"     : {'type':Element, 'root': self,            'locator':QPath("/classname='UIAButton' && label='登陆QQ' && visible=true")},
-            })
+        rect = self.element.rect
+        if isinstance(self.element, Element):
+            return (rect.top*self._dy, rect.left*self._dx, rect.width*self._dx, rect.height*self._dy)
+        else:
+            return (rect.top, rect.left, rect.width, rect.height)
 
-    # 输入帐号密码
-    # -*- -*- -*- -*- -*- -*-
+    @property
+    def os_type(self):
+        '''系统类型，例如"android"，"ios"，"pc"
+        '''
+        return "ios"
 
-    from qt4i.device import Device
+    def screenshot(self):
+        '''当前容器的区域截图
+        '''
+        return self.element.screenshot(image_type='Pil.Image')
 
-    device = Device()
-    app = App(device, 'com.tencent.qq.dailybuild.test.gn')
-    app.start()
+    def click(self, offset_x=None, offset_y=None):
+        '''点击
+        
+        :param offset_x: 相对于该控件的坐标offset_x，百分比( 0 -> 1 )，不传入则默认该控件的中央
+        :type offset_x: float or None
+        :param offset_y: 相对于该控件的坐标offset_y，百分比( 0 -> 1 )，不传入则默认该控件的中央
+        :type offset_y: float or None
+        '''
+        self.element.click(offset_x, offset_y)
 
-    # window = Window(app)
-    # items = window.find_elements(QPath("/classname='UIAWindow'"))
-    # for item in items:
-    #     print item.get_attr_dict()
+    def send_keys(self, text):
+        self.element.send_keys(text)
 
-    loginwin = LoginWin(app)
-    elem_uid = loginwin.Controls['帐号框']
-    elem_pwd = loginwin.Controls['密码框']
-    elem_uid.wait_for_exist(5, 0.01)
-    elem_pwd.wait_for_exist(5, 0.01)
-    elem_uid.value = ""
-    elem_uid.send_keys('1002000505')
-    elem_pwd.value = ""
-    elem_pwd.send_keys('QtaTest123')
-    app.release()
+    def double_click(self, offset_x=None, offset_y=None):
+        if offset_x is None:
+            offset_x = 0.5
+        if offset_y is None:
+            offset_y = 0.5
+        self.element.double_click(offset_x, offset_y)
+
+    def long_click(self, duration=3, offset_x=None, offset_y=None):
+        if offset_x is None:
+            offset_x = 0.5
+        if offset_y is None:
+            offset_y = 0.5
+        self.element.long_click(duration, offset_x=offset_x, offset_y=offset_y)

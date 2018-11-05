@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "2ad30b4d-e1b1-2845-9414-a2bf870a773b++4776",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "2ad30b4d-e1b1-2845-9414-a2bf870a773b++4776" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "2ad30b4d-e1b1-2845-9414-a2bf870a773b++4776" : 9223372036854775807
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "3C2269AF-81C2-40D6-BD71-AEB0A764E15F",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "2ad30b4d-e1b1-2845-9414-a2bf870a773b++4776" : "QT4i_3.0\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "XCTestAgent",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "qt4i\/driver\/xctest\/xctestproj\/XCTestAgent\/XCTestAgent.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "http:\/\/tc-svn.tencent.com\/basic\/basic_testsupport_rep",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "2ad30b4d-e1b1-2845-9414-a2bf870a773b++4776"
+    }
+  ]
+}

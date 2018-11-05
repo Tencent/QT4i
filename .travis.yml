@@ -1,0 +1,21 @@
+language: python
+matrix:
+  include:
+  - os: osx
+    python: '2.7'
+    language: generic
+install:
+  - pip install -r requirements.txt --user
+  - sudo mkdir /usr/local/man
+  - sudo chmod a+w /usr/local/man
+script:
+  - python tests/__init__.py
+deploy:
+  provider: pypi
+  user: "qta"
+  password: 
+    secure: VrgOJQoFdXU+Y056Jurn7vofZO0TJfi95ksDvnxq0MMkyK2nIFAxquA2iyzJlKeyUpfQaEUHc+wx3YNKfA86A236FPsdJMAdYu1UEP9YheeOlZlarPxsiQgFPIj3itJrTWuY0XQAu6VvDPXiCAF8QHcgCpBrSe4nvEMFSqnBeri3wzMbEYLIXuVpmbyGeYdj0t/rnz+NDf1epScvY9EvNGxC/J4ifXaFK6lRHDy56sW8CiG7QctiLMMGO7c1WcKD8nQmfWPjqBJOvv7C4KbcTuAfMuG6Od3yaYx8HKBJ7HA3Mc41hMEc3TGCTT0TpRWYpK/sNl1dUrK5T3USOvRj8mwq70RMT0Urk39F0qWQ8hdMfhpdC6FKWrvenUtjjU2yUbZZVR4+lrG6nn7QvfaZ/ffUR+ywCoPgo0BcyfjFbKymmz3fyP05ShjxwEeCguEU1SlDxGXMUTq6DSTg1bAXhM1efYqNfAw7dWXXhOGa2iuU57CMcOR6Ma97XzJZIGBYcGYb2krCOgufZ7UZ7HjnCHHpxdxWqNGJrla0d42Xci2P9Tjuiyvu08st3c3NnRRky7Dyx5/BEv8f9eVkYr1T2YmuS5ytT8frQ9GX7Ul6j2YwzVm57yVPkvPgKkoSkX21hrX5gs/qmI4yuTPKjbIeBGT6XUT5Jku3UD4+e0HXo7A=
+  distributions: sdist 
+  on:
+    tags: true
+    branch: master

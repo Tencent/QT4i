@@ -1,4 +1,4 @@
-qtaf
-construct
-six
-M2Crypto
+qtaf>=5.2.9
+pymobiledevice-qta
+biplist
+websocket-client

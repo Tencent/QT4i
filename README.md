@@ -1,4 +1,5 @@
-# QT4i
+# QT4i [![GitHub license](https://img.shields.io/cran/l/devtools.svg)](LICENSE) [![Build Status](https://travis-ci.com/Tencent/QT4i.svg?branch=master)](https://travis-ci.com/Tencent/QT4i)
+
  
 QT4i (Quick Test for iOS) is a QTA test automation driver for iOS application.
  

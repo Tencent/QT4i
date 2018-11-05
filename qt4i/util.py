@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-# 
+#
 # Tencent is pleased to support the open source community by making QTA available.
 # Copyright (C) 2016THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the BSD 3-Clause License (the "License"); you may not use this 
@@ -11,12 +11,11 @@
 # under the License is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
-# 
+#
 '''utility module
 '''
-# 2014/08/12    banana      created
-# 2014/11/25    cherry    增加: EnumDirect, Timeout
-# 2014/12/08    cherry    增加: RegExpCompile
+
+import os
 
 from testbase.util import Timeout as BaseTimeout
 
@@ -84,6 +83,21 @@ class RegExpCompile(object):
         return self.regexp
 
 
-if __name__ == '__main__':
+def less_to(version_a, version_b):
+    '''判断version_a是否小于version_b
     
-    print RegExpCompile('test中文123=\\.?')
+    :returns: True if version_a less than version_b, False if not
+    :rtype: boolean
+    '''
+    import re
+    if not re.match('\d*\.\d*\.\d*', version_a):
+        return True
+    elif not re.match('\d*\.\d*\.\d*', version_b):
+        return False
+    a = version_a.split('.')
+    b = version_b.split('.')
+    length = min(len(a), len(b))
+    for i in range(length):
+        if int(a[i]) < int(b[i]):
+            return True
+    return False

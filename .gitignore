@@ -1,5 +1,16 @@
-# Mac OS X
-*.DS_Store
-
-# Generated files
+# python编译文件
 *.pyc
+# eclipse生成的备份文件
+*.bak
+# 打包自动生成的目录
+build/
+dist/
+qt4i.egg-info/
+_qt4i_version_stub.py
+# 调试目录
+debug/
+# Mac系统自动生成的文件
+*.DS_Store
+docs/_build
+.settings
+version.txt

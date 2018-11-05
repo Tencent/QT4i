@@ -1,5 +1,5 @@
-# -*- coding:utf-8 -*-
-# 
+# -*- coding: utf-8 -*-
+#
 # Tencent is pleased to support the open source community by making QTA available.
 # Copyright (C) 2016THL A29 Limited, a Tencent company. All rights reserved.
 # Licensed under the BSD 3-Clause License (the "License"); you may not use this 
@@ -11,94 +11,82 @@
 # under the License is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
-# 
-"""
-打包脚本
-"""
-
-# 2015/06/09 olive 新建
+#
 
 import os
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Command
+from setuptools.command.bdist_egg import bdist_egg as orig_bdist_egg
+
+DATA_PACKAGES = ["qt4i.driver"]
+BASE_DIR = os.path.realpath(os.path.dirname(__file__))
 
 
-NAME        = "qt4i"
-VERSION     = "2.6.36"
-PACKAGES    = ["qt4i"]
-DATA_PACKAGES = ["qt4i._driver"]
-BASE_DIR    = os.path.dirname(os.path.realpath(__file__))
-#MODULES     = ["__main__"]
+def generate_version():
+    version = '1.0.1'
+    if os.path.isfile(os.path.join(BASE_DIR, "version.txt")):
+        with open("version.txt", "r") as fd:
+            content = fd.read().strip()
+            if content:
+                version = content
+    return version
 
-try:
-    import _qt4i_version_stub
-    VERSION =  _qt4i_version_stub.VERSION
-except:
-    pass
 
-def list_sub_pkgs(packages):
-    '''查找全部的子包
-    
-    :returns: list
-    '''
-    pkgs = packages[:]
-    for pkg in packages:
-        subpkgs = find_packages(pkg)
-        for subpkg in subpkgs:
-            pkgs.append("%s.%s" % (pkg, subpkg))
-    return pkgs
-    
-def list_data_files(packages):
-    '''遍历package中的文件并查找所有资源文件
-    
-    :returns: list
-    '''
-    basedir = os.path.dirname(__file__)
-    data_files = []
-    for package in packages:
-        file_path = os.path.join(basedir, *package.split('.'))
-        if os.path.isdir(file_path):
-            for dirpath, dirnames, filenames in os.walk(file_path):
-                if os.path.basename(dirpath) == '.svn':
-                    continue
-                if '.svn' in dirnames:
-                    dirnames.remove('.svn')
-                dirname = '/'.join(os.path.relpath(dirpath, basedir).split(os.path.sep))
-                child_data_files = []
-                for filename in filenames:
-                    if not filename.endswith('.py'):
-                        child_data_files.append(dirname+'/'+filename)
-                if child_data_files:
-                    data_files.append((dirname, child_data_files))
-        else:
-            dirname = '/'.join(package.split('.')[0:-1])    
-            data_files.append(dirname+'/'+package.split('.')[-1])
-    return data_files
-
-def get_requirements():
-    '''获取依赖包
-    
-    :returns: list
-    '''
+def parse_requirements():
     reqs = []
-    req_file = os.path.join(BASE_DIR, "requirements.txt")
-    if os.path.isfile(req_file):
-        with open(req_file, 'r') as fd:
+    if os.path.isfile(os.path.join(BASE_DIR, "requirements.txt")):
+        with open(os.path.join(BASE_DIR, "requirements.txt"), 'r') as fd:
             for line in fd.readlines():
                 line = line.strip()
                 if line:
                     reqs.append(line)
-    return reqs
+    return reqs 
+
+
+def get_description():
+    with open(os.path.join(BASE_DIR, "README.md"), "r") as fh:
+        return fh.read()
+
+
+class bdist_egg(Command):
+    """automatically update version number before build
+    """
+    user_options = []
+    boolean_options = []
+          
+    def initialize_options (self):
+        pass
     
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        version = self.distribution.metadata.get_version()
+        with open(os.path.join("qt4i", "version.py"), "w") as fd:
+            fd.write('version = "%s"\n' % version)
+        self.run_command("orig_bdist_egg")
+   
+
 if __name__ == "__main__":
     
     setup(
-      version=VERSION,
-      name=NAME,
-      packages=list_sub_pkgs(PACKAGES),
-      #py_modules=MODULES,
-      data_files=list_data_files(DATA_PACKAGES),
+      version=generate_version(),
+      name="qt4i",
+      cmdclass={
+        "bdist_egg": bdist_egg,
+        "orig_bdist_egg": orig_bdist_egg,},      
+      packages=find_packages(exclude=('tests','tests.*', 'debug', 'debug.*')),
+      py_modules=["__main__"],
+      include_package_data = True,
+      data_files=[(".", ["requirements.txt", "version.txt"])],
+      long_description=get_description(),
+      long_description_content_type="text/markdown",
       author="Tencent",
-      license="Copyright(c)2010-2015 Tencent All Rights Reserved. ",
-      url="https://github.com/Tencent/QT4i",
-      requires=get_requirements(),
-        )
+      license="Copyright(c)2010-2018 Tencent All Rights Reserved. ",
+      install_requires=parse_requirements(),
+      entry_points={
+            'console_scripts': ['qt4i-manage = qt4i.cmds:qt4i_manage_main'],
+      },
+      classifiers=[
+        "Programming Language :: Python :: 2.7",
+      ]
+    )

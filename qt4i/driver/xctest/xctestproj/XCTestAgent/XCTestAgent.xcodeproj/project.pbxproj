@@ -1,0 +1,334 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		005788FD1DA8A0C60041DFA2 /* RoutingHTTPServer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 005788FA1DA8A0C60041DFA2 /* RoutingHTTPServer.framework */; };
+		005789001DA8A0D00041DFA2 /* RoutingHTTPServer.framework in Copy Files */ = {isa = PBXBuildFile; fileRef = 005788FA1DA8A0C60041DFA2 /* RoutingHTTPServer.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		008AE4F71D5827D700D33A11 /* XCTestAgent.m in Sources */ = {isa = PBXBuildFile; fileRef = 008AE4F61D5827D700D33A11 /* XCTestAgent.m */; };
+		008AE5051D58314600D33A11 /* WebDriverAgentLib.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 008AE5011D58314600D33A11 /* WebDriverAgentLib.framework */; };
+		008AE50B1D586C5800D33A11 /* WebDriverAgentLib.framework in Copy Files */ = {isa = PBXBuildFile; fileRef = 008AE5011D58314600D33A11 /* WebDriverAgentLib.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		00A60261216B80E100EA8BA0 /* CocoaAsyncSocket.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A60260216B80E100EA8BA0 /* CocoaAsyncSocket.framework */; };
+		00A60262216B80E700EA8BA0 /* CocoaAsyncSocket.framework in Copy Files */ = {isa = PBXBuildFile; fileRef = 00A60260216B80E100EA8BA0 /* CocoaAsyncSocket.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		008AE5091D586AB700D33A11 /* Copy Files */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				00A60262216B80E700EA8BA0 /* CocoaAsyncSocket.framework in Copy Files */,
+				005789001DA8A0D00041DFA2 /* RoutingHTTPServer.framework in Copy Files */,
+				008AE50B1D586C5800D33A11 /* WebDriverAgentLib.framework in Copy Files */,
+			);
+			name = "Copy Files";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		005788FA1DA8A0C60041DFA2 /* RoutingHTTPServer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RoutingHTTPServer.framework; path = third/WebDriverAgentLib.framework/Frameworks/RoutingHTTPServer.framework; sourceTree = "<group>"; };
+		008AE4F31D5827D700D33A11 /* XCTestAgent.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = XCTestAgent.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		008AE4F61D5827D700D33A11 /* XCTestAgent.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = XCTestAgent.m; sourceTree = "<group>"; };
+		008AE4F81D5827D700D33A11 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		008AE5011D58314600D33A11 /* WebDriverAgentLib.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebDriverAgentLib.framework; path = third/WebDriverAgentLib.framework; sourceTree = "<group>"; };
+		00A60260216B80E100EA8BA0 /* CocoaAsyncSocket.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CocoaAsyncSocket.framework; path = third/WebDriverAgentLib.framework/Frameworks/CocoaAsyncSocket.framework; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		008AE4F01D5827D700D33A11 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				00A60261216B80E100EA8BA0 /* CocoaAsyncSocket.framework in Frameworks */,
+				005788FD1DA8A0C60041DFA2 /* RoutingHTTPServer.framework in Frameworks */,
+				008AE5051D58314600D33A11 /* WebDriverAgentLib.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		008AE4E81D5827B200D33A11 = {
+			isa = PBXGroup;
+			children = (
+				008AE5061D58314F00D33A11 /* Frameworks */,
+				008AE4F51D5827D700D33A11 /* XCTestAgent */,
+				008AE4F41D5827D700D33A11 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		008AE4F41D5827D700D33A11 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				008AE4F31D5827D700D33A11 /* XCTestAgent.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		008AE4F51D5827D700D33A11 /* XCTestAgent */ = {
+			isa = PBXGroup;
+			children = (
+				008AE4F61D5827D700D33A11 /* XCTestAgent.m */,
+				008AE4F81D5827D700D33A11 /* Info.plist */,
+			);
+			path = XCTestAgent;
+			sourceTree = "<group>";
+		};
+		008AE5061D58314F00D33A11 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				00A60260216B80E100EA8BA0 /* CocoaAsyncSocket.framework */,
+				005788FA1DA8A0C60041DFA2 /* RoutingHTTPServer.framework */,
+				008AE5011D58314600D33A11 /* WebDriverAgentLib.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		008AE4F21D5827D700D33A11 /* XCTestAgent */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 008AE4F91D5827D700D33A11 /* Build configuration list for PBXNativeTarget "XCTestAgent" */;
+			buildPhases = (
+				008AE4EF1D5827D700D33A11 /* Sources */,
+				008AE4F01D5827D700D33A11 /* Frameworks */,
+				008AE4F11D5827D700D33A11 /* Resources */,
+				008AE5091D586AB700D33A11 /* Copy Files */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = XCTestAgent;
+			productName = XCTestAgent;
+			productReference = 008AE4F31D5827D700D33A11 /* XCTestAgent.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		008AE4E91D5827B200D33A11 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0730;
+				TargetAttributes = {
+					008AE4F21D5827D700D33A11 = {
+						CreatedOnToolsVersion = 7.3.1;
+						DevelopmentTeam = 95H9327388;
+					};
+				};
+			};
+			buildConfigurationList = 008AE4EC1D5827B200D33A11 /* Build configuration list for PBXProject "XCTestAgent" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 008AE4E81D5827B200D33A11;
+			productRefGroup = 008AE4F41D5827D700D33A11 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				008AE4F21D5827D700D33A11 /* XCTestAgent */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		008AE4F11D5827D700D33A11 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		008AE4EF1D5827D700D33A11 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				008AE4F71D5827D700D33A11 /* XCTestAgent.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		008AE4ED1D5827B200D33A11 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/third",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SDKROOT)/usr/include/libxml2",
+					"$(SRCROOT)/Modules",
+				);
+			};
+			name = Debug;
+		};
+		008AE4EE1D5827B200D33A11 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/third",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SDKROOT)/usr/include/libxml2",
+					"$(SRCROOT)/Modules",
+				);
+			};
+			name = Release;
+		};
+		008AE4FA1D5827D700D33A11 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer: SNG Tencent (9B27VW6AUK)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: SNG Tencent (9B27VW6AUK)";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 95H9327388;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/third",
+					"$(PROJECT_DIR)/third/WebDriverAgentLib.framework/Frameworks",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "$(SDKROOT)/usr/include/libxml2";
+				INFOPLIST_FILE = XCTestAgent/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = "-all_load";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tencent.XCTestAgent;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
+				PROVISIONING_PROFILE_SPECIFIER = TencentSNGgn;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		008AE4FB1D5827D700D33A11 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer: SNG Tencent (9B27VW6AUK)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: SNG Tencent (9B27VW6AUK)";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 95H9327388;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/third",
+					"$(PROJECT_DIR)/third/WebDriverAgentLib.framework/Frameworks",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "$(SDKROOT)/usr/include/libxml2";
+				INFOPLIST_FILE = XCTestAgent/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_LDFLAGS = "-all_load";
+				PRODUCT_BUNDLE_IDENTIFIER = com.tencent.XCTestAgent;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
+				PROVISIONING_PROFILE_SPECIFIER = TencentSNGgn;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		008AE4EC1D5827B200D33A11 /* Build configuration list for PBXProject "XCTestAgent" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				008AE4ED1D5827B200D33A11 /* Debug */,
+				008AE4EE1D5827B200D33A11 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		008AE4F91D5827D700D33A11 /* Build configuration list for PBXNativeTarget "XCTestAgent" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				008AE4FA1D5827D700D33A11 /* Debug */,
+				008AE4FB1D5827D700D33A11 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 008AE4E91D5827B200D33A11 /* Project object */;
+}

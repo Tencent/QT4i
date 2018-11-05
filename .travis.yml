@@ -4,13 +4,17 @@ matrix:
   - os: osx
     python: '2.7'
     language: generic
+    env: BUILD_SDIST=true
 install:
   - pip install -r requirements.txt --user
   - sudo mkdir /usr/local/man
   - sudo chmod a+w /usr/local/man
+  - pip install mock --user
 script:
   - python tests/__init__.py
+before_deploy: "echo $TRAVIS_TAG | sed 's/^.//' > version.txt"
 deploy:
+  skip_cleanup: true
   provider: pypi
   user: "qta"
   password: 
@@ -18,4 +22,4 @@ deploy:
   distributions: sdist 
   on:
     tags: true
-    branch: master
+    condition: $TRAVIS_TAG =~ v[0-9]+\.[0-9]+\.[0-9]+ && $BUILD_SDIST=true

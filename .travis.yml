@@ -4,7 +4,8 @@ matrix:
   - os: osx
     python: '2.7'
     language: generic
-    env: BUILD_SDIST=true
+    env:
+      - BUILD_SDIST=true
 install:
   - pip install -r requirements.txt --user
   - sudo mkdir /usr/local/man
@@ -16,9 +17,9 @@ before_deploy: echo $TRAVIS_TAG | sed 's/^.//' > version.txt
 deploy:
   skip_cleanup: true
   provider: pypi
-  user: "qta"
+  user: qta
   password:
-    secure: YeUaAq5oBJ6ddLg2W9HYUZI0clq82p6H2NekB+Q1lO+c9dN5OMQ1miejJ0CQVLqfCm7/f9tgipwwNeEJnmn7srQVDbsJNUMFB2WgOOj3ZXWEu5gLxomZ0NDRWd5o7XTOETwxt71SLdKpAZyKstF/6EbjX0FLroBZG4X4F2Up9y5cvGjmi/6nwaBPJive+1YTAZVFPlpg481eLR17aA0HlO4QNzMtHcWkoDGxv38da7Et4IJupBd3lst0/X7yFx5i0KeetnuriU3BF0J4pP6NrrB4RQO3ZhqwHVntOqvvq4rOFy4kzbYxmJ7g2EaW8JbUQj1GwSxwvFDzxzMWuBy0yeOEV6t+dOb4/X8TN5Ks6JkSFe6gq1iDiWpLom3cqaGIJkdotdWBROitQG1ZDfiuRmLiiVWyi4quLUNV628/zG4BcUIP4ax1hqYIW8gj4GfGz5tru2FLuURWyvnwPSzejnDLDXRgJ9LKcrFdTy2djBhhOoxMNj20EXQngihWtarnMl+jD62i1o1CmsjRCOQ/1qChdh4BHCUZtcb6QJXUX05w54Xk8k8fSORXbsMWTurpAxUcu4RfAmBm+Y2eqX3yTtFsPM/CohvrLJqc3TtY94MxJwUTpBQX8aGMmFTEgmoSvAMvyMBWTNU+z+MT6NJVrk5qu15Qua3ZhP67ErssHVc=
+    secure: $KEYSTORE_PASSWD
   distributions: sdist
   on:
     tags: true

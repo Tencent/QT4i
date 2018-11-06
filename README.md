@@ -1,5 +1,5 @@
 # QT4i 
-[![GitHub license](https://img.shields.io/cran/l/devtools.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Build Status](https://travis-ci.com/Tencent/QT4i.svg?branch=master)](https://travis-ci.com/Tencent/QT4i)
 [![PyPi version](https://img.shields.io/pypi/v/qt4i.svg)](https://pypi.python.org/pypi/qt4i/) 
 [![Documentation Status](https://readthedocs.org/projects/qt4i/badge/?version=latest)](https://qt4i.readthedocs.io/zh_CN/latest/?badge=latest)

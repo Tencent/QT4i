@@ -1,4 +1,9 @@
-# QT4i [![GitHub license](https://img.shields.io/cran/l/devtools.svg)](LICENSE) [![Build Status](https://travis-ci.com/Tencent/QT4i.svg?branch=master)](https://travis-ci.com/Tencent/QT4i)
+# QT4i 
+[![GitHub license](https://img.shields.io/cran/l/devtools.svg)](LICENSE)
+[![Build Status](https://travis-ci.com/Tencent/QT4i.svg?branch=master)](https://travis-ci.com/Tencent/QT4i)
+[![PyPi version](https://img.shields.io/pypi/v/qt4i.svg)](https://pypi.python.org/pypi/qt4i/) 
+[![Documentation Status](https://readthedocs.org/projects/qt4i/badge/?version=latest)](https://qt4i.readthedocs.io/zh_CN/latest/?badge=latest)
+[![GitHub tag](https://img.shields.io/github/tag/Tencent/QT4i.svg)](https://GitHub.com/Tencent/QT4i/tags/)
 
  
 QT4i (Quick Test for iOS) is a QTA test automation driver for iOS application.

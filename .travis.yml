@@ -6,20 +6,20 @@ matrix:
     language: generic
     env: BUILD_SDIST=true
 install:
-  - pip install -r requirements.txt --user
-  - sudo mkdir /usr/local/man
-  - sudo chmod a+w /usr/local/man
-  - pip install mock --user
+- pip install -r requirements.txt --user
+- sudo mkdir /usr/local/man
+- sudo chmod a+w /usr/local/man
+- pip install mock --user
 script:
-  - python tests/__init__.py
-before_deploy: "echo $TRAVIS_TAG | sed 's/^.//' > version.txt"
+- python tests/__init__.py
+before_deploy: echo $TRAVIS_TAG | sed 's/^.//' > version.txt
 deploy:
   skip_cleanup: true
   provider: pypi
-  user: "qta"
-  password: 
-    secure: VrgOJQoFdXU+Y056Jurn7vofZO0TJfi95ksDvnxq0MMkyK2nIFAxquA2iyzJlKeyUpfQaEUHc+wx3YNKfA86A236FPsdJMAdYu1UEP9YheeOlZlarPxsiQgFPIj3itJrTWuY0XQAu6VvDPXiCAF8QHcgCpBrSe4nvEMFSqnBeri3wzMbEYLIXuVpmbyGeYdj0t/rnz+NDf1epScvY9EvNGxC/J4ifXaFK6lRHDy56sW8CiG7QctiLMMGO7c1WcKD8nQmfWPjqBJOvv7C4KbcTuAfMuG6Od3yaYx8HKBJ7HA3Mc41hMEc3TGCTT0TpRWYpK/sNl1dUrK5T3USOvRj8mwq70RMT0Urk39F0qWQ8hdMfhpdC6FKWrvenUtjjU2yUbZZVR4+lrG6nn7QvfaZ/ffUR+ywCoPgo0BcyfjFbKymmz3fyP05ShjxwEeCguEU1SlDxGXMUTq6DSTg1bAXhM1efYqNfAw7dWXXhOGa2iuU57CMcOR6Ma97XzJZIGBYcGYb2krCOgufZ7UZ7HjnCHHpxdxWqNGJrla0d42Xci2P9Tjuiyvu08st3c3NnRRky7Dyx5/BEv8f9eVkYr1T2YmuS5ytT8frQ9GX7Ul6j2YwzVm57yVPkvPgKkoSkX21hrX5gs/qmI4yuTPKjbIeBGT6XUT5Jku3UD4+e0HXo7A=
-  distributions: sdist 
+  user: qta
+  password:
+    secure: YeUaAq5oBJ6ddLg2W9HYUZI0clq82p6H2NekB+Q1lO+c9dN5OMQ1miejJ0CQVLqfCm7/f9tgipwwNeEJnmn7srQVDbsJNUMFB2WgOOj3ZXWEu5gLxomZ0NDRWd5o7XTOETwxt71SLdKpAZyKstF/6EbjX0FLroBZG4X4F2Up9y5cvGjmi/6nwaBPJive+1YTAZVFPlpg481eLR17aA0HlO4QNzMtHcWkoDGxv38da7Et4IJupBd3lst0/X7yFx5i0KeetnuriU3BF0J4pP6NrrB4RQO3ZhqwHVntOqvvq4rOFy4kzbYxmJ7g2EaW8JbUQj1GwSxwvFDzxzMWuBy0yeOEV6t+dOb4/X8TN5Ks6JkSFe6gq1iDiWpLom3cqaGIJkdotdWBROitQG1ZDfiuRmLiiVWyi4quLUNV628/zG4BcUIP4ax1hqYIW8gj4GfGz5tru2FLuURWyvnwPSzejnDLDXRgJ9LKcrFdTy2djBhhOoxMNj20EXQngihWtarnMl+jD62i1o1CmsjRCOQ/1qChdh4BHCUZtcb6QJXUX05w54Xk8k8fSORXbsMWTurpAxUcu4RfAmBm+Y2eqX3yTtFsPM/CohvrLJqc3TtY94MxJwUTpBQX8aGMmFTEgmoSvAMvyMBWTNU+z+MT6NJVrk5qu15Qua3ZhP67ErssHVc=
+  distributions: sdist
   on:
     tags: true
-    condition: $TRAVIS_TAG =~ v[0-9]+\.[0-9]+\.[0-9]+ && $BUILD_SDIST=true
+    condition: "$TRAVIS_TAG =~ v[0-9]+\\.[0-9]+\\.[0-9]+ && $BUILD_SDIST=true"

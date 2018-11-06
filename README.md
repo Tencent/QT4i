@@ -15,6 +15,12 @@ QT4i (Quick Test for iOS) is a QTA test automation driver for iOS application.
  * Low maintenance costs with QTA UI test automation framework
  
 QT4i should be used with [QTAF](https://github.com/Tencent/QTAF), please check it first.
+
+### Get Started
+Check out our [Usage Document](https://qt4i.readthedocs.io/zh_CN/latest/) to get going with QT4i. There is also [sample code](https://github.com/qtacore/QT4iDemoProj) that shows how to run testcase with QT4i.
+
+### Anatomy
+If you are interested in anatomy of QT4i, the [Design Document](https://github.com/Tencent/QT4i/blob/master/design.md) may be useful to you.
  
 ------------------------------
  
@@ -27,6 +33,12 @@ QT4i(Quick Test for iOS)，基于QTA提供面向iOS应用的UI测试自动化测
  * 高效维护——基于QPath技术和[QTAF](https://github.com/Tencent/QTAF)UI框架，降低产品变化的脚本维护投入
    
 QT4i需要和[QTAF](https://github.com/Tencent/QTAF)一起使用，请先参考QTAF的使用
+
+### 入门指南
+请查看我们的[使用文档](https://qt4i.readthedocs.io/zh_CN/latest/)以便您快速上手QT4i，同时可以参考我们的[示例代码](https://github.com/qtacore/QT4iDemoProj)。
+
+### 框架原理
+如果你对QT4i的实现原理感兴趣，可以参考我们的[设计文档](https://github.com/Tencent/QT4i/blob/master/design.md)。
 
 ------------------------------
 

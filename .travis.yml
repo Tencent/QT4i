@@ -19,8 +19,9 @@ deploy:
   provider: pypi
   user: qta
   password:
-    secure: $KEYSTORE_PASSWD
+    secure: F33SWnNIKMSGqoxLpWWGicwERkk9aA3M03HHx/MXVZfdyXWQbi6N65+ZYXLO+eROOi2DYUiw8cTJPZUsgSSUN4QKIjnveiIlwNd10z6kGHzSgDinyq0WnB1rdhNQ5QCAah/s9zYHrqyOFELaw6CfMUFoAIEUJaFGxa7N+v9LGLoqYhRVZjpr+gSm4UOyJpANutOIJZzDLlH+6gBlUqeTZcfWqzJLeMa2wnwo82I/j8bH38I6wMbNSKadUN+wgGERE+EmERHg39oHQkiIHIO5RpU27vZGyTN0t93yYOdCp944p71qbFv9Cjm//qhLtjFbSt9RK9dQ0XiNw1MgbEzXQDrVeF6+adZIO8sZT6eIBmRlp6yNyL9ApT/XVGgYZPdJnomUaxgA82fRhWfp0HMNprLaJCHc8ktAMmh1wmHteYRNpU7ZGBQgRjEi+5aZ26LDsnpwrmCI7v4p992ia2HLS0jbBCSNbQ8PMJaaNaQ8VY9/mMspPKQH4e7t/32jnpM6QTZ/9TZ+AgBz3k6PnDrtJFu9d74TOLmMkl/xWeH+ZJ8kBkzaKqEOepZuKm5pQfJMOiEc3aabDkCugBKw5sLcmP4Ax1lPa3GtNwJMKRU8OOOHhHjTWuGkxWxF7FflrN+Z/pe90PEqXPHaCdpFAluoxH5haiko8Q4iBH8w5s8HgYg=
   distributions: sdist
   on:
     tags: true
-    condition: $TRAVIS_TAG =~ v[0-9]+\.[0-9]+\.[0-9]+ && $BUILD_SDIST=true
+    branch: master
+#    condition: $TRAVIS_TAG =~ v[0-9]+\.[0-9]+\.[0-9]+ && $BUILD_SDIST=true

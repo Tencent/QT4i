@@ -1,3 +1,6 @@
 sphinx
 recommonmark
 sphinx_rtd_theme
+qtaf>=5.2.9
+pymobiledevice-qta
+biplist

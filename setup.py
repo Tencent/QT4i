@@ -78,6 +78,7 @@ if __name__ == "__main__":
       py_modules=["__main__"],
       include_package_data = True,
       data_files=[(".", ["requirements.txt", "version.txt"])],
+      description="QTA driver for iOS app",
       long_description=get_description(),
       long_description_content_type="text/markdown",
       author="Tencent",
@@ -88,5 +89,9 @@ if __name__ == "__main__":
       },
       classifiers=[
         "Programming Language :: Python :: 2.7",
-      ]
+      ],
+      url="https://github.com/Tencent/QT4i",
+      project_urls={
+        "QT4i Documentation":"https://qt4i.readthedocs.io/zh_CN/latest/"
+      },
     )

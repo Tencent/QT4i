@@ -103,7 +103,7 @@ class Device(RPCEndpoint):
         ''' 
         env = {
                 'rules_of_alert_auto_handle' : rule,
-                'flag_alert_auto_handled'    : True
+                'flag_alert_auto_handled'    : False
              }
         self.agent.execute(Command.QTA_ALERT_DISMISS, env)      
                   

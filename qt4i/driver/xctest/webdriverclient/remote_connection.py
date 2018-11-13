@@ -554,16 +554,3 @@ class RemoteConnection(object):
                 raise XCTestAgentTimeoutException('XCTestAgent response is timed out')
             except Exception, e:
                 self.logger.error('Remote Connection:%s' % str(e))
-
-if __name__ == '__main__':
-    rc = RemoteConnection('http://127.0.0.1:8100', keep_alive=False)
-    result = rc.execute(Command.STATUS, params=None)
-    print result
-    sessionId = result['sessionId']
-#     params = {'using':'xpath', 'value':"//XCUIElementTypeTextField[@value='恭喜发财']", 'sessionId': sessionId}
-#     result = rc.execute(Command.FIND_ELEMENT, params)
-#     print result
-#     params = {'id':result['value']['ELEMENT'], 'sessionId':sessionId, 'name':'visible'}
-    params = {'id':'70000000-0000-0000-C337-010000000000', 'sessionId':sessionId, 'name':'visible'}
-    print rc.execute(Command.GET_ELEMENT_ATTRIBUTE, params)
-    

@@ -44,6 +44,8 @@ CurrentDirectoryPath = os.path.abspath(os.path.dirname(__file__))
 MAX_PORT_NUM = 50
 DEFAULT_IP = '127.0.0.1'
 DEFAULT_PORT = 8100
+AGENT_STORE_PATH = '/cores/xctestagent'
+
 
 class EnumDevice():
     '''设备类型
@@ -264,6 +266,58 @@ class XCUITestAgent(object):
         except Exception:
             self._relay_error = traceback.format_exc()
             self.log.exception('forward ports')
+
+    def _build_agent_for_simulator(self, xcode_version):
+        agent_dir = os.path.join(AGENT_STORE_PATH, xcode_version)
+        agent_file = os.path.join(agent_dir, 'XCTestAgent-Runner.app')
+        if not os.path.exists(agent_file):
+            if not os.path.exists(agent_dir):
+                os.makedirs(agent_dir)
+            xctest_root = pkg_resources.resource_filename("qt4i", "driver/xctest/xctestproj") #@UndefinedVariable
+            xctestproj = os.path.join(xctest_root, 'XCTestAgent','XCTestAgent.xcodeproj')
+            build_for_test_cmd = ' '.join(['xcodebuild',
+                'build-for-testing',
+                '-project',
+                '"%s"' % xctestproj,
+                '-scheme',
+                'XCTestAgent',
+                '-destination',
+                '"platform=%s,id=%s"' % (self.type, self.udid),
+                'CONFIGURATION_BUILD_DIR=%s' % agent_dir])
+            subprocess.call(build_for_test_cmd, shell=True)
+        return agent_dir
+
+    def _get_xcodebuild_agent_cmd_for_simulator(self, xcode_version):
+        template_root = pkg_resources.resource_filename("qt4i", "driver/xctest/bin") #@UndefinedVariable
+        xctestfile_template = os.path.join(template_root, "iphonesimulator-%s.xctestrun" % xcode_version)
+        agent_dir = self._build_agent_for_simulator(xcode_version)
+        xctestfile = os.path.join(agent_dir, "%s.xctestrun" % self.udid)
+        if not os.path.isfile(xctestfile):
+            shutil.copyfile(xctestfile_template, xctestfile)
+        cmd = "/usr/libexec/PlistBuddy -c 'Set :XCTestAgent:EnvironmentVariables:USE_PORT %s' %s" % (self._server_port, xctestfile)
+        subprocess.call(cmd, shell=True)
+        derived_data_path = '/tmp/xctlog/%s' % self.udid
+        if not os.path.exists(derived_data_path):
+            os.makedirs(derived_data_path)
+        return ' '.join(['xcodebuild',
+                'test-without-building',
+                '-xctestrun',
+                xctestfile,
+                '-destination',
+                '"platform=%s,id=%s"' % (self.type, self.udid),
+                '-derivedDataPath',
+                derived_data_path])
+
+    def _get_fbsimctl_agent_cmd_for_simulator(self, xcode_version):
+        agent_dir = self._build_agent_for_simulator(xcode_version)
+        xctest_path = os.path.join(agent_dir, 'XCTestAgent-Runner.app/PlugIns/XCTestAgent.xctest') 
+        attached_app = settings.get('QT4I_SIM_ATTACHED_APP', 'com.apple.reminders')
+        return ' '.join([dt.DT().fbsimctl,
+                self.udid,
+                'launch_xctest',
+                xctest_path,
+                attached_app,
+                '--port %s -- listen' % self._server_port])
         
     def _stdout_line_callback(self, line):
         '''标准输出回调函数
@@ -274,7 +328,7 @@ class XCUITestAgent(object):
         '''标准错误回调函数
         '''
         self.log.error(line.strip(' '))
-    
+
     def start(self, retry=1, timeout=CommandTimeout):
         '''启动Agent，类初始化即调用
         
@@ -285,19 +339,11 @@ class XCUITestAgent(object):
         '''
         if self.type == EnumDevice.Simulator:
             dt.DT().reboot(self.udid)
-            xct_root = pkg_resources.resource_filename("qt4i", "driver/xctest/bin") #@UndefinedVariable
-            standard_xctestfile = os.path.join(xct_root, "iphonesimulator-x86_64.xctestrun")
-            xctestfile = os.path.join(xct_root, "%s.xctestrun" % self.udid)
-            if not os.path.isfile(xctestfile):
-                shutil.copyfile(standard_xctestfile, xctestfile)
-            cmd = "/usr/libexec/PlistBuddy -c 'Set :XCTestAgent:EnvironmentVariables:USE_PORT %s' %s" % (self._server_port, xctestfile)
-            subprocess.call(cmd, shell=True)
-            self._agent_cmd = ' '.join(['xcodebuild', 
-                'test-without-building', 
-                '-xctestrun', 
-                xctestfile, 
-                '-destination',
-                '"platform=%s,id=%s"' % (self.type, self.udid)])
+            xcode_version = dt.DT.get_xcode_version().split(".")[0]
+            if int(xcode_version) >= 9:
+                self._agent_cmd = self._get_xcodebuild_agent_cmd_for_simulator(xcode_version)
+            else:
+                self._agent_cmd = self._get_fbsimctl_agent_cmd_for_simulator(xcode_version)
         else:
             self._agent_cmd = ' '.join(['xcodebuild',
                 '-project %s' % self.XCTestAgentPath,

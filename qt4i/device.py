@@ -45,11 +45,8 @@ Encoding = 'UTF-8'
 DEFAULT_ADDR = '127.0.0.1'
 DEFAULT_PORT = 12306
 DEFAULT_AGENT_PORT = 8100
-DEFAULT_ALERT_RULE =  [
-    {
-        'button_text'  : '^确定$|^好$|^允许$|^OK$|^Allow$'
-    }
-]
+DEFAULT_ALERT_RULE =  settings.get('QT4I_ALERT_RULES', [{'button_text':'^确定$|^好$|^允许$|^OK$|^Allow$'}])
+
 
 class DeviceServer(object):
     '''设备服务器

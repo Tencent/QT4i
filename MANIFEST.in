@@ -1,0 +1,4 @@
+global-include *.txt *.TXT *.js *.zip
+recursive-include qt4i/driver/instruments/internal/_tracetemplate *
+recursive-include qt4i/driver/xctest/bin *
+recursive-include qt4i/driver/xctest/xctestproj *

@@ -22,8 +22,6 @@ import pkg_resources
 import re
 import subprocess
 import shutil
-import sys
-import urllib
 import time
 import httplib
 import datetime
@@ -89,23 +87,22 @@ class DT(object):
     
     def __init__(self):
         self.xcode_version = DT.get_xcode_version()
-        self.CurrentDirectoryPath = pkg_resources.resource_filename("qt4i", "driver/tools") #@UndefinedVariable
         self.udid = None
         self.bundle_id = None
         self.sc = None
         self._init_fbsimctl()
     
     def _init_fbsimctl(self):
-        fbsimctl_zip = os.path.join(self.CurrentDirectoryPath, "fbsimctl/fbsimctl.zip")
-        if os.path.exists(fbsimctl_zip):
+        try:
+            fbsimctl_zip = pkg_resources.resource_filename("qt4i", "driver/tools/fbsimctl/fbsimctl.zip") #@UndefinedVariable
             self.fbsimctl = DT.FBSIMCTL_DEFAULT_PATH
-        else:
+        except:
             try:
                 os.environ['PATH'] += ':/usr/local/bin'
                 result = subprocess.check_output("which fbsimctl", env=os.environ, shell=True, stderr=subprocess.STDOUT, )
                 self.fbsimctl = result.split('\n')[0]
             except subprocess.CalledProcessError: 
-                raise Exception('fbsimctl not found, use brew install')  
+                raise Exception('fbsimctl not found, use brew install')
         if self.fbsimctl == DT.FBSIMCTL_DEFAULT_PATH and not os.path.exists(self.fbsimctl): # 解压fbsimctl到默认路径
             fbsimctl_root_path = os.path.split(DT.FBSIMCTL_DEFAULT_PATH)[0]
             zip_decompress(fbsimctl_zip, fbsimctl_root_path)
@@ -532,9 +529,8 @@ class DT(object):
             subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
             return (True, "")
         except subprocess.CalledProcessError, e:
-            raise Exception('_install_for_simulator error:%s' % e.output)
-        return (False, e.output)
-    
+            return (False, e.output)
+
     def install(self, _file_path, _device_udid=None):
         '''通过udid指定真机安装IPA或模拟器安装APP(注意：真机所用IPA不能在模拟器上安装和使用，IPA与APP相互不兼容)
         

@@ -30,11 +30,11 @@
 	$ python manage.py qt4i.setup
    
 
-如果没有创建测试项目，也可以执行qta-manage命令代理上述命令：
+如果没有创建测试项目，也可以执行qt4i-manage命令代理上述命令：
 
 .. code-block:: shell
 
-   $ qta-manage setup
+   $ qt4i-manage setup
 
 
 .. note:: XCTestAgent工程默认存放路径为 “~/XCTestAgent” 。

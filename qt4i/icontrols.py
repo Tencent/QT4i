@@ -89,7 +89,7 @@ class ControlContainer(object):
                 params['title'] = title
             if url:
                 params['url'] = url
-            if mt_instance:
+            if mt_instance is not None:
                 params['instance'] = mt_instance
             return cls(**params)
         raise Exception('控件定义的结构异常: [%s]' % key)

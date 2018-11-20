@@ -13,7 +13,7 @@ App类概述
 App类封装
 ======
 
-我们仍以Demo App为例，完整代码见Demo工程。被测应用的基本App类继承于AndroidApp类，只需实现最基本的功能，如下::
+我们仍以Demo App为例，完整代码见Demo工程。被测应用的基本App类继承于qt4i.icontrols.App类，只需实现最基本的功能，如下::
 
    from qt4i.icontrols import App
    from testbase.conf import settings
@@ -30,7 +30,7 @@ App类封装
    
            :param device         : Device的实例对象
            :type device          : Device
-           :param app_name       : APP的BundleID（例如：com.tencent.sng.test.gn）
+           :param app_name       : APP的BundleID（例如：com.tencent.demo）
            :type app_name        : str
            :param trace_template : trace模板（专项测试使用，功能测试默认为None即可）
            :type trace_template  : str

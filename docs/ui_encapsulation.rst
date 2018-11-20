@@ -1,4 +1,5 @@
 .. include:: links/link.ref
+.. _ui_encaps:
 
 UI元素封装
 ======

@@ -903,3 +903,19 @@ class MetisView(object):
         if offset_y is None:
             offset_y = 0.5
         self.element.long_click(duration, offset_x=offset_x, offset_y=offset_y)
+
+    def drag(self, from_x=0.5, from_y=0.5, to_x=0.5, to_y=0.1, duration=0.5):
+        '''拖拽
+
+        :param from_x: 起点 x偏移百分比（从左至右为0.0至1.0）
+        :type from_x: float
+        :param from_y: 起点 y偏移百分比（从上至下为0.0至1.0）
+        :type from_y: float
+        :param to_x: 终点 x偏移百分比（从左至右为0.0至1.0）
+        :type to_x: float
+        :param to_y: 终点 y偏移百分比（从上至下为0.0至1.0）
+        :type to_y: float
+        :param duration: 持续时间（秒）
+        :type duration: float
+        '''
+        self.element.drag(from_x, from_y, to_x, to_y, duration)

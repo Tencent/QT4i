@@ -14,5 +14,5 @@
 .. _qtaf-qpath: https://qta-tuia.readthedocs.io/zh/latest/qpath.html
 .. |qtaf-qpath| replace:: QPath语法和使用
 
-.. _qa-m2: https://qta-tuia.readthedocs.io/zh/latest/qpath.html
+.. _qa-m2: https://gitlab.com/m2crypto/m2crypto/blob/master/INSTALL.rst
 .. |qa-m2| replace:: M2crypto官网帮助文档

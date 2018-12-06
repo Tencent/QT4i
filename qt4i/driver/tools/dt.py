@@ -95,6 +95,8 @@ class DT(object):
     def _init_fbsimctl(self):
         try:
             fbsimctl_zip = pkg_resources.resource_filename("qt4i", "driver/tools/fbsimctl/fbsimctl.zip") #@UndefinedVariable
+            if not os.path.exists(fbsimctl_zip):
+                raise Exception('fbsimctl not found')
             self.fbsimctl = DT.FBSIMCTL_DEFAULT_PATH
         except:
             try:

@@ -57,4 +57,4 @@ Use [Code Style](https://www.python.org/dev/peps/pep-0008/) for Python.
 
 ## License
 By contributing to QT4i, you agree that your contributions will be licensed
-under its [BSD LICENSE](https://github.com/Tencent/QT4i/blob/master/LICENSE)
+under its [BSD LICENSE](https://github.com/Tencent/QT4i/blob/master/LICENSE.TXT)

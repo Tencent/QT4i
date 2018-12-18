@@ -19,25 +19,26 @@ import re
 import subprocess
 import thread
 import time
+import traceback
+from six import PY3
     
 def start_rvictl(udid, sudo_pwd, pcap_path='dump.pcap'):
     try:
         result = False
         cmd = 'rvictl -s %s' % udid
         start_info = subprocess.check_output(cmd.split(' '), stderr = subprocess.STDOUT)
+        if PY3:
+            start_info = start_info.decode()
         start_info =start_info.strip('\n')
-        print start_info
         matched = re.match(r'Starting device \w+ \[SUCCEEDED\] with interface (rvi\d+)', start_info)
         if matched:
             interface = matched.group(1)
-            print 'interface:%s' % interface
             tcpdump = 'tcpdump -i %s -n -s 0 tcp -w %s' % (interface, pcap_path)
             thread.start_new_thread(_sudo, (sudo_pwd, tcpdump))
             time.sleep(1)
-            print 'starting tcpdump...'
             result = True
-    except subprocess.CalledProcessError, e:
-        print e.output
+    except subprocess.CalledProcessError:
+        traceback.print_exc()
     return result
     
 
@@ -45,13 +46,16 @@ def stop_rvictl(udid, sudo_pwd):
     try:
         result = False
         rvi_active = subprocess.check_output('rvictl -l'.split(' '), stderr = subprocess.STDOUT)
+        if PY3:
+            rvi_active = rvi_active.decode()
         interface = None
         for line in rvi_active.split('\n'):
             if udid in line:
                 interface = re.match(r'.+(rvi\d+)', line).group(1)
                 break
-        print 'Inquire active interface:', interface
         grep = subprocess.check_output("ps ax | grep tcpdump | grep -v grep", shell=True)
+        if PY3:
+            grep = grep.decode()
         for line in grep.split('\n'):
             if 'tcpdump' in line and interface in line:
                 pid = line.split(' ')[1]
@@ -59,10 +63,12 @@ def stop_rvictl(udid, sudo_pwd):
                 _sudo(sudo_pwd, stop_tcpdump)
         stop_rvi = 'rvictl -x %s' % udid
         info = subprocess.check_output(stop_rvi.split(' '), stderr = subprocess.STDOUT)
+        if PY3:
+            info = info.decode()
         matched = re.match(r'Stopping device \w+ \[SUCCEEDED\]', info)
         result = not matched 
-    except subprocess.CalledProcessError, e:
-        print e.output
+    except subprocess.CalledProcessError:
+        traceback.print_exc()
     return result
 
 

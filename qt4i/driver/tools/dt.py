@@ -15,6 +15,8 @@
 '''DeviceTools
 '''
 
+from __future__ import absolute_import, print_function
+
 import fcntl 
 import json
 import os
@@ -23,18 +25,20 @@ import re
 import subprocess
 import shutil
 import time
-import httplib
 import datetime
 import base64
-import traceback
+from six.moves.http_client import HTTPConnection
+from six import PY3
+from six import with_metaclass
+import six
 
-import mobiledevice
-from mobiledevice import InstallationProxy
+from qt4i.driver.tools import mobiledevice
+from qt4i.driver.tools.mobiledevice import InstallationProxy
+from qt4i.driver.tools.sched import PortManager
+from qt4i.driver.util import zip_decompress
+from qt4i.driver.tools.mobiledevice import SandboxClient
 from testbase.util import Singleton
 from testbase.util import Timeout
-from qt4i.driver.tools.sched import PortManager
-from qt4i.driver.util._files import zip_decompress
-from qt4i.driver.tools.mobiledevice import SandboxClient
 
 
 # 挂载根路径
@@ -76,12 +80,10 @@ def func_retry_wrap(func):
             raise
     return _wrap_func
 
-class DT(object):
+class DT(with_metaclass(Singleton, object)):
     '''
     DeviceTools
     '''
-    
-    __metaclass__ = Singleton
     
     FBSIMCTL_DEFAULT_PATH = '/cores/fbsimctl/fbsimctl'
     
@@ -102,13 +104,15 @@ class DT(object):
             try:
                 os.environ['PATH'] += ':/usr/local/bin'
                 result = subprocess.check_output("which fbsimctl", env=os.environ, shell=True, stderr=subprocess.STDOUT, )
+                if PY3:
+                    result = result.decode()
                 self.fbsimctl = result.split('\n')[0]
             except subprocess.CalledProcessError: 
                 raise Exception('fbsimctl not found, use brew install')
         if self.fbsimctl == DT.FBSIMCTL_DEFAULT_PATH and not os.path.exists(self.fbsimctl): # 解压fbsimctl到默认路径
             fbsimctl_root_path = os.path.split(DT.FBSIMCTL_DEFAULT_PATH)[0]
             zip_decompress(fbsimctl_zip, fbsimctl_root_path)
-            os.chmod(self.fbsimctl, 0755)
+            os.chmod(self.fbsimctl, 0o755)
             fbsimctl_fmk_path = os.path.split(DT.FBSIMCTL_DEFAULT_PATH)[0]
             for root, dirs, _files in os.walk(fbsimctl_fmk_path):
                 if root.endswith('.framework'):
@@ -135,8 +139,10 @@ class DT(object):
         version = "7.3"
         try:
             xcode_info = subprocess.check_output("xcodebuild -version", shell=True, stderr=subprocess.STDOUT)
+            if PY3:
+                xcode_info = xcode_info.decode()
             version = re.match(r'Xcode\s(\d+\.\d+)', xcode_info.split('\n')[0]).group(1)
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             raise Exception('get_xcode_version error:%s' % e.output)
         return version 
 
@@ -195,6 +201,8 @@ class DT(object):
         try:
             cmd = "xcrun simctl list devices"
             result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+            if PY3:
+                result = result.decode()            
             dev_flag = False
             for line in result.split("\n"):
                 if line.startswith("-- "):
@@ -214,7 +222,7 @@ class DT(object):
                         device["state"] = ret.group(3)
                         device["simulator"] = True
                         devices.append(device)
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             raise Exception('_get_simulators_below_xcode_7 error:%s' % e.output)
         return devices
     
@@ -223,6 +231,8 @@ class DT(object):
         try:
             cmd = "xcrun simctl list -j devices"   
             result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+            if PY3:
+                result = result.decode()            
             json_devices = json.loads(result, encoding='utf-8')["devices"]
             for k in json_devices:
                 if k.startswith("iOS"):
@@ -231,7 +241,7 @@ class DT(object):
                         dev["ios"] = ios_version
                         dev["simulator"] = True
                         devices.append(dev)
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             raise Exception('_get_simulators_above_xcode_7 error:%s' % e.output)
         return devices          
     
@@ -356,7 +366,7 @@ class DT(object):
         raise Exception("app_info unsupported")
     
     def _modify_wi_port(self, udid):
-        port = PortManager().get_port('web', udid)
+        port = PortManager.get_port('web', udid)
         if self.xcode_version.startswith('9'):
             wi_plist_path = '/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/CoreSimulator/Profiles/Runtimes/iOS.simruntime/Contents/Resources/RuntimeRoot/System/Library/LaunchDaemons/com.apple.webinspectord.plist'
         else: 
@@ -414,12 +424,10 @@ class DT(object):
         pos = url.find('/')
         host = url[:pos]
         page = url[pos:]
-        conn = httplib.HTTPConnection(host, port=80, timeout=60)  # 60秒超时
+        conn = HTTPConnection(host, port=80, timeout=60)  # 60秒超时
         conn.request('GET', page)
         res = conn.getresponse()
         if res.status != 200: 
-            if isinstance(url0, unicode):
-                url0 = url0.encode('utf8')
             raise RuntimeError('访问：%s 错误[HTTP错误码：%s]' % (url0, res.status))
         target_size = int(res.getheader('Content-Length'))
         data = res.read()
@@ -509,7 +517,7 @@ class DT(object):
         if not os.path.isdir(pkgcachedir):
             os.mkdir(pkgcachedir)
         
-        if not isinstance(_file_path, unicode):
+        if not isinstance(_file_path, six.text_type):
             try:
                 _file_path = _file_path.decode('utf8')
             except:
@@ -530,7 +538,7 @@ class DT(object):
             cmd = "xcrun simctl install %s %s" % (udid, app_path)
             subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
             return (True, "")
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             return (False, e.output)
 
     def install(self, _file_path, _device_udid=None):
@@ -587,7 +595,7 @@ class DT(object):
             cmd = "xcrun simctl uninstall %s %s" % (udid, bundle_id)
             subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
             return (True, "")
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             return (False, e.output)
     
     def uninstall(self, _bundle_id, _device_udid=None):
@@ -675,9 +683,11 @@ class DT(object):
         try:  #先尝试simctl命令获取sandbox路径,如果失败再尝试分析系统安装日志获取路径
             cmd = "xcrun simctl get_app_container %s %s data" % (udid, bundle_id)
             app_path = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, close_fds=True)
+            if PY3:
+                app_path = app_path.decode()            
             return app_path[:-1]
-        except subprocess.CalledProcessError, e:
-            print 'xcrun simctl get_app_container error:%s' % e.output
+        except subprocess.CalledProcessError:
+            pass
         install_log_path = os.path.join(os.path.expanduser('~'), 'Library/Logs/CoreSimulator/%s/MobileInstallation' % udid)
         apps_path = os.path.join(os.path.expanduser('~'), 'Library/Developer/CoreSimulator/Devices/%s/data/Containers/Data/Application' % udid)
         app_path = None
@@ -716,7 +726,6 @@ class DT(object):
                 sandbox_root = self._get_simulator_app_data_path(udid, bundle_id)
                 remotepath = remotepath[1:] if remotepath.startswith('/') else remotepath
                 remote_file = os.path.join(sandbox_root, remotepath)
-                print remote_file
                 shutil.copy(localpath, remote_file)
                 return True
             else:
@@ -804,6 +813,8 @@ class DT(object):
             apps_info =[]
             cmd = "%s --json %s list_apps" % (self.fbsimctl, udid)
             result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+            if PY3:
+                result = result.decode()             
             result = result.split('\n')
             for line in result:
                 if 'list_apps' in line:
@@ -818,7 +829,7 @@ class DT(object):
                 elif app_info['install_type'] == app_type:
                     apps.append({app_info['bundle']['bundle_id']:app_info['bundle']['name']})
             return apps
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             raise Exception('list_apps for simulator error:%s' % e.output)
     
     def list_apps(self, udid, app_type): 
@@ -837,13 +848,15 @@ class DT(object):
     
     def get_syslog(self, watchtime, logFile, processName, udid):
         '''获取设备上服务日志
-        
-        :param udid: 设备的udid
-        :type udid: str 
-        :param processName: 服务名
-        :type processName: str 
+
+        :param watchtime: 观察时间
+        :type watchtime: int
         :param logFile: 日志文件名
-        :type logFile: str 
+        :type logFile: str
+        :param processName: 服务名
+        :type processName: str
+        :param udid: 设备的udid
+        :type udid: str
         '''
         if self.is_simulator(udid):
             root_path = os.path.join(os.path.expanduser('~'), 'Library/Logs/CoreSimulator/')
@@ -983,6 +996,8 @@ class DT(object):
         cmd = "%s --json list" % self.fbsimctl
         try:
             res = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+            if PY3:
+                res = res.decode()
             for dev in res.split('\n'):
                 if dev == '' :
                     continue
@@ -1003,5 +1018,5 @@ class DT(object):
                 dev[u'ios'] = ios.split(' ')[1].strip()
                 devices.append(dev)
         except subprocess.CalledProcessError:
-            print traceback.format_exc()
+            pass
         return devices

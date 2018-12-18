@@ -15,6 +15,7 @@
 '''iOS WebInspector API Driver
 '''
 
+from __future__ import absolute_import, print_function
 
 from qt4i.driver.rpc import rpc_method
 from qt4i.driver.rpc import RPCEndpoint
@@ -60,7 +61,7 @@ class WebInspector(RPCEndpoint):
     
     @rpc_method
     def release(self):
-        for ub in self.WKRDP.keys():
+        for ub in list(self.WKRDP.keys()):
             if ub.split(self.WKRDP_SEPARATOR)[0] == self.udid:
                 self.WKRDP[ub].stop()
                 del self.WKRDP[ub]
@@ -72,15 +73,3 @@ class WebInspector(RPCEndpoint):
         if ub in WebInspector.WKRDP:
             WebInspector.WKRDP[ub].stop()
             del WebInspector.WKRDP[ub]  
-        
-if __name__ == '__main__':
-#     driver = WebInspector(None, 'bf416c56bbf77d74bf075c66046219f03c71e5e1')  # iPhone7 Plus
-    driver = WebInspector(None, 'FACA200A-4B34-484A-8E19-E32477B61591')  # iPhone6S Simulator
-    bundle_id = "com.tencent.qq.dailybuild"
-#     bundle_id = "com.apple.WebKit.WebContent"
-    page_id = driver.get_page_id(bundle_id, None, None)
-    print 'page_id:', page_id
-    print driver.eval_script(bundle_id, None, page_id, r'document.title')['value']
-    print driver.eval_script(bundle_id, None, page_id, r'location.href')
-    
-    driver.release()

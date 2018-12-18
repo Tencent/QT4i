@@ -15,6 +15,7 @@
 '''pymobiledevice extended tools
 '''
 
+from __future__ import absolute_import, print_function
 
 from cmd import Cmd
 import os
@@ -22,6 +23,7 @@ import re
 from subprocess import check_call, STDOUT, CalledProcessError
 import tempfile
 import time
+import six
 
 from pymobiledevice.afc import AFCClient, AFCShell
 from pymobiledevice.diagnostics_relay import DIAGClient
@@ -41,7 +43,7 @@ def list_devices():
     mux = USBMux()
     if not mux.devices:
         mux.process(1)
-    for _ in xrange(5): 
+    for _ in range(5): 
         mux.process(0.1)
     return [d.serial for d in mux.devices]
 
@@ -85,8 +87,8 @@ def get_screenshot(udid = None, filepath = "/tmp/screenshot.png"):
         args = ["/usr/bin/sips", "-s format png", tiff_file_path, "--out", filepath]
         check_call(" ".join(args), shell=True, stderr=STDOUT)
         result = True
-    except CalledProcessError, e:
-        print e.output
+    except CalledProcessError:
+        pass
     finally:
         tiff_file.close()
     return result
@@ -178,12 +180,12 @@ def reboot(device_udid = None):
     lockdown = LockdownClient(udid=device_udid)
     DIAGClient(lockdown).restart()
     time.sleep(10)
-    for _ in xrange(20):
+    for _ in range(20):
         if device_udid in list_devices():
-            print 'reboot successfully'
+            print('reboot successfully')
             break
     else:
-        print 'reboot error: real device disconect'
+        print('reboot error: real device disconect')
 
 
 def get_syslog(watchtime, logFile, procName = None, device_udid = None):
@@ -218,7 +220,6 @@ class InstallationProxy(object):
             completion = z.get("PercentComplete")
             if completion:
                 if handler:
-                    print "calling handler"
                     handler(completion,*args)    
 #                 print "%s: %s%% Complete" % (z.get("Status"), completion)
             else:
@@ -241,14 +242,14 @@ class InstallationProxy(object):
         :type ipa_path: str
         :return: boolean - 安装是否成功
         '''
-        print "上传安装包..."
+        print("上传安装包...")
         afc_client = AFCClient(self.lockdown)
         tmp_ipa = "t%d.ipa" % time.time()
         with open(ipa_path, "rb") as f:
             ipa_content = f.read()
             afc_client.set_file_contents("/" + tmp_ipa, ipa_content)
-            print "上传完毕"
-        print "开始安装"
+            print("上传完毕")
+        print("开始安装")
         cmd = {"Command":"Install", "PackagePath": tmp_ipa}
         if options:
             cmd.update(options)
@@ -256,10 +257,6 @@ class InstallationProxy(object):
         self.service = self.lockdown.startService("com.apple.mobile.installation_proxy")
         self.service.sendPlist(cmd)
         ret = self.wait_completion(handler, args)
-        if ret[0]:
-            print "安装成功"
-        else:
-            print "安装失败:%s" % ret[1]
         return ret
 
     
@@ -270,12 +267,7 @@ class InstallationProxy(object):
         :type bundle_id: str
         :return: boolean - 卸载是否成功
         '''     
-        ret = self.send_cmd_for_bid(bundle_id, "Uninstall", options, handler, args)
-        if ret[0]:
-            print "卸载成功"
-        else:
-            print "卸载失败:%s" % ret[1]
-        return ret
+        return self.send_cmd_for_bid(bundle_id, "Uninstall", options, handler, args)
     
     def apps_info(self):
         self.service.sendPlist({"Command": "Lookup"})
@@ -322,7 +314,7 @@ class AFCShell2(AFCShell):
     
     def dir_walk(self,dirname):
         res = self.afc.dir_walk(dirname)
-        file_iter = res.next()[2]
+        file_iter = six.next(res)[2]
         return file_iter
     
     def set_file_contents(self,filename,data):
@@ -334,7 +326,6 @@ class AFCShell2(AFCShell):
     def do_rm(self, p):
         f =  self.afc.get_file_info(self.curdir + "/" + p)
         if f is None:
-            print 'Sandbox path is not exist: \"%s\"' % p
             return  
         elif 'st_ifmt' in f and f['st_ifmt'] == 'S_IFDIR':
             self.afc.remove_directory(self.curdir + "/" + p)
@@ -426,9 +417,9 @@ class SandboxClient(AFCClient):
 
         self.service.sendPlist({"Command": sandbox, "Identifier": bid})
         status = self.service.recvPlist()
-        if status.has_key('Error') and status['Error'] == "ApplicationLookupFailed":
+        if 'Error' in status and status['Error'] == "ApplicationLookupFailed":
             raise RuntimeWarning('ApplicationLookupFailed')
-        if status.has_key('Status') and status['Status'] != 'Complete':
+        if 'Status' in status and status['Status'] != 'Complete':
             raise RuntimeWarning('House arrest service launch failed')
         super(SandboxClient, self).__init__(self.lockdown, service=self.service)
 
@@ -454,7 +445,6 @@ class SandboxClient(AFCClient):
             remotefiles = [filename]
             remotepath = filepath
         
-        print remotefiles
         for f in remotefiles:
             src = os.path.join(remotepath,f)
             content = self.afc_shell.get_file_contents(src)
@@ -498,8 +488,3 @@ class SandboxClient(AFCClient):
         '''
         if self.service:
             self.service.close()
-
-
-if __name__ == '__main__':
-    print list_devices()
-        

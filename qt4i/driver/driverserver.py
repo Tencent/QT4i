@@ -12,9 +12,10 @@
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
 #
-'''QT4i 3.1 Driver Server
+'''QT4i Driver Server
 '''
 
+from __future__ import absolute_import, print_function
 
 import argparse
 import atexit
@@ -22,10 +23,11 @@ import os
 import signal
 import sys
 import time
+from six import string_types
     
-from rpc import SimpleJSONRPCServer
-from tools import logger as logging 
-from qt4i.driver.util._process import Process
+from qt4i.driver.rpc import SimpleJSONRPCServer
+from qt4i.driver.tools import logger as logging 
+from qt4i.driver.util import Process
 
 DEFAULT_IP = '0.0.0.0'
 DEFAULT_PORT = 12306
@@ -167,7 +169,7 @@ class Daemon(object):
                 os.remove(self.pidfile)
 
         # Start the daemon
-        if is_daemon: 
+        if is_daemon:
             self.daemonize()
         self.run()
 
@@ -236,7 +238,7 @@ class DriverManager(Daemon):
         self._driver_url = 'http://%s:%d' % (self._driver_address, self._driver_port)
         self._udid = udid
         self._agent_port = agent_port
-        if isinstance(web_port, basestring):
+        if isinstance(web_port, string_types):
             web_port = int(web_port)
         self._web_port = web_port
     
@@ -267,7 +269,7 @@ class DriverManager(Daemon):
                 os.remove(self.pidfile)
 
         # Start the daemon
-        if is_daemon: 
+        if is_daemon:
             self.daemonize()
         self.run()
         
@@ -276,11 +278,11 @@ class DriverManager(Daemon):
             if self._web_port:
                 # 单例类PortManager，设置WebInspector端口
                 from qt4i.driver.tools.sched import PortManager
-                PortManager().set_port(port_type='web', udid=self._udid, port=self._web_port, base=27753)
+                PortManager.set_port(port_type='web', udid=self._udid, port=self._web_port, base=27753)
             # 单例类XCUITestAgentManager，启动XCUITestAgent
             from qt4i.driver.xctest.agent import XCUITestAgentManager
             agent_manager = XCUITestAgentManager()
-            agent_manager.start_agent(device_id=self._udid, server_port=self._agent_port, retry=1, timeout=40)
+            agent_manager.start_agent(device_id=self._udid, server_port=self._agent_port, retry=1)
         
         server = SimpleJSONRPCServer(urls=urls, addr=(self._driver_address, self._driver_port))
         logger.info('DriverServer(%s:%s) - started' % (self._driver_address, self._driver_port))
@@ -350,8 +352,8 @@ if __name__ == '__main__':
     args = main_parser.parse_args()
     urls = []
     if args.driver_type == 'instruments':
-        from instruments.uia import Device, Application, Element #@UnusedImport
-        from instruments.ins import InstrumentsCallBacker 
+        from qt4i.driver.instruments.uia import Device, Application, Element #@UnusedImport
+        from qt4i.driver.instruments.ins import InstrumentsCallBacker 
         urls = [
             ("^device/(?P<device_id>[\w\-]+)/$", "^ins\..*", InstrumentsCallBacker)
         ]

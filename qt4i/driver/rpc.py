@@ -15,17 +15,30 @@
 '''RPC Framework
 '''
 
+from __future__ import absolute_import, print_function
+
 import json
 import random
 import re
 import string
-import SimpleXMLRPCServer
-import SocketServer
-import types
-import xmlrpclib
+import six
+from six.moves.socketserver import ThreadingMixIn
+from six.moves.xmlrpc_server import SimpleXMLRPCServer
+from six.moves.xmlrpc_server import SimpleXMLRPCRequestHandler
+import six.moves.xmlrpc_client as xmlrpc_client
+from six.moves.http_client import HTTPResponse
+from six import StringIO
+from six import PY2
+
+if PY2: 
+    from urllib import splittype
+    from urllib import splithost
+else:
+    from urllib.parse import splittype
+    from urllib.parse import splithost
+
 from qt4i.driver.tools import logger
-from httplib import HTTPResponse
-from StringIO import StringIO
+
 
 try:
     import fcntl
@@ -34,11 +47,13 @@ except ImportError:
 
 IDCHARS = string.ascii_lowercase+string.digits
 
+
 def random_id(length=8):
     return_id = ''
     for _ in range(length):
         return_id += random.choice(IDCHARS)
     return return_id
+
 
 class _RPCMethod(object):
     """RPC method decorator
@@ -82,12 +97,14 @@ class RPCEndpoint(object):
         '''
         return {"method": method, "params": list(params)}
 
+
 class FakeSocket():
     def __init__(self, response_str):
         self._file = StringIO(response_str)
     def makefile(self, *args, **kwargs):
         return self._file
-    
+
+
 class RPCClientProxy(object):
     '''RPC Client, 
     copy  ServerProxy 的源码， 在__request 方法中进行解码
@@ -97,16 +114,13 @@ class RPCClientProxy(object):
     def __init__(self, uri, ws_uri=None,transport=None, encoding=None, verbose=0,
                  allow_none=0, use_datetime=0, context=None):
         # establish a "logical" server connection
-
-        if isinstance(uri, unicode):
+        if PY2 and isinstance(uri, six.text_type):
             uri = uri.encode('ISO-8859-1')
-
         # get the url
-        import urllib
-        protocol, uri = urllib.splittype(uri)
+        protocol, uri = splittype(uri)
         if protocol not in ("http", "https"):
-            raise IOError, "unsupported JSON-RPC protocol"
-        self.__host, self.__handler = urllib.splithost(uri)
+            raise IOError("unsupported JSON-RPC protocol")
+        self.__host, self.__handler = splithost(uri)
         if not self.__handler:
             self.__handler = "/RPC2"
         self.__ws_uri = ws_uri
@@ -179,7 +193,7 @@ class RPCClientProxy(object):
                 return self.encode_dict(response, "UTF-8")
             elif isinstance(response, list):
                 return self.encode_list(response, "UTF-8")
-            elif isinstance(response, unicode):
+            elif PY2 and isinstance(response, six.text_type):
                 return response.encode("UTF-8")
             return response
 
@@ -193,7 +207,7 @@ class RPCClientProxy(object):
 
     def __getattr__(self, name):
         # magic method dispatcher
-        return xmlrpclib._Method(self.__request, name)
+        return xmlrpc_client._Method(self.__request, name)
 
     # note: to call a remote object with an non-standard name, use
     # result getattr(server, "strange-python-name")(args)
@@ -208,7 +222,6 @@ class RPCClientProxy(object):
             return self.__transport
         raise AttributeError("Attribute %r not found" % (attr,))
     
-            
     def encode_dict(self, content, encoding="UTF-8"):
         '''将字典编码为指定形式
         
@@ -221,7 +234,7 @@ class RPCClientProxy(object):
         for key in content:
             if isinstance(content[key], dict):
                 content[key] = self.encode_dict(content[key], encoding)
-            elif isinstance(content[key], unicode):
+            elif PY2 and isinstance(content[key], six.text_type):
                 content[key] = content[key].encode(encoding)
             elif isinstance(content[key], list):
                 content[key] = self.encode_list(content[key], encoding)
@@ -239,7 +252,7 @@ class RPCClientProxy(object):
         for ind, item in enumerate(content):
             if isinstance(item, dict):
                 content[ind] = self.encode_dict(item, encoding)
-            elif isinstance(item, unicode):
+            elif PY2 and isinstance(item, six.text_type):
                 content[ind] = content[ind].encode(encoding)
             elif isinstance(item, list):
                 content[ind] = self.encode_list(item, encoding)
@@ -285,6 +298,9 @@ class TransportMixIn(object):
         connection.putheader("Content-Length", str(len(request_body)))
         connection.endheaders()
         if request_body:
+
+            if not PY2 and isinstance(request_body, str):
+                request_body = request_body.encode('utf-8')
             connection.send(request_body)
             
     def getparser(self):
@@ -313,24 +329,27 @@ class JSONTarget(object):
         self.data.append(data)
 
     def close(self):
-        return ''.join(self.data)
+        if PY2:
+            return ''.join(self.data)
+        else:
+            return b''.join(self.data)
 
 
-class Transport(TransportMixIn, xmlrpclib.Transport):
+class Transport(TransportMixIn, xmlrpc_client.Transport):
     
     def __init__(self, use_datetime):
         TransportMixIn.__init__(self)
-        xmlrpclib.Transport.__init__(self, use_datetime)
+        xmlrpc_client.Transport.__init__(self, use_datetime)
 
 
-class SafeTransport(TransportMixIn, xmlrpclib.SafeTransport):
+class SafeTransport(TransportMixIn, xmlrpc_client.SafeTransport):
     
     def __init__(self, use_datetime, context):
         TransportMixIn.__init__(self)    
-        xmlrpclib.SafeTransport.__init__(self, use_datetime, context)
+        xmlrpc_client.SafeTransport.__init__(self, use_datetime, context)
 
 
-class SimpleJSONRPCRequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
+class SimpleJSONRPCRequestHandler(SimpleXMLRPCRequestHandler):
     '''JSON-RPC请求处理器
     '''
     def is_rpc_path_valid(self):
@@ -350,7 +369,10 @@ class SimpleJSONRPCRequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler)
                 chunk_size = min(size_remaining, max_chunk_size)
                 L.append(self.rfile.read(chunk_size))
                 size_remaining -= len(L[-1])
-            data = ''.join(L)
+            if PY2:
+                data = ''.join(L)
+            else:
+                data = b''.join(L)
             response = self.server._marshaled_dispatch(
                     data, getattr(self, '_dispatch', None), self.path
                 )
@@ -367,16 +389,19 @@ class SimpleJSONRPCRequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler)
                     q = self.accept_encodings().get("gzip", 0)
                     if q:
                         try:
-                            response = xmlrpclib.gzip_encode(response)
+                            response = xmlrpc_client.gzip_encode(response)
                             self.send_header("Content-Encoding", "gzip")
                         except NotImplementedError:
                             pass
         self.send_header("Content-length", str(len(response)))
         self.end_headers()
-        self.wfile.write(response)
+        if PY2:
+            self.wfile.write(response)
+        else:
+            self.wfile.write(response.encode('utf-8'))
 
 
-class SimpleJSONRPCServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.SimpleXMLRPCServer):
+class SimpleJSONRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
     """RPC Server
     """
     
@@ -400,7 +425,7 @@ class SimpleJSONRPCServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.Simple
         :type urls: list
         :type addr: tuple
         """
-        SimpleXMLRPCServer.SimpleXMLRPCServer.__init__(self, addr=addr, 
+        SimpleXMLRPCServer.__init__(self, addr=addr, 
                                                        requestHandler=SimpleJSONRPCRequestHandler,
                                                        allow_none=True, 
                                                        encoding='UTF-8',
@@ -427,14 +452,14 @@ class SimpleJSONRPCServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer.Simple
         except ValueError:
             fault = Fault(-32700, 'JSON parsing error')
             return fault.response()
-        if not isinstance(request, dict): 
+        if not isinstance(request, dict):
             fault = Fault(-32600, 'Invalid request data type')
             return fault.response()
         rpcid = request.get('id', None)
         method = request.get('method', None)
         params = request.get('params', [])
-        if not method or type(method) not in types.StringTypes or \
-            type(params) not in (types.ListType, types.DictType, types.TupleType):
+        params_types = (list, dict, tuple)
+        if not method or not isinstance(method, six.string_types) or not isinstance(params, params_types):
             return Fault(-32600, 'Invalid request method or parameters').response()
           
         tried_enpoint_clss = []

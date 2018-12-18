@@ -15,10 +15,12 @@
 '''此模块用于归纳Xcode
 '''
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
+from __future__ import absolute_import, print_function
+
 import os, re
-from qt4i.driver.util._files import FileManager
-from qt4i.driver.util._task import Task
-from qt4i.driver.util._task import ThreadTask
+from qt4i.driver.util import FileManager
+from qt4i.driver.util import Task
+from qt4i.driver.util import ThreadTask
 CurrentDirectoryPath = os.path.abspath(os.path.dirname(__file__))
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 

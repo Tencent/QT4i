@@ -15,23 +15,24 @@
 '''iOS WebKit Remote debug Protocol
 '''
 
+from __future__ import absolute_import, print_function
+
 import json
-import plistlib
 import re
-import time
-from re import sub
-import StringIO
 import struct
 import socket
 import subprocess
 import uuid
+from past.builtins import xrange
+from six import BytesIO
+from six import PY3
+from six import PY2
 
 from biplist import Data
 from biplist import readPlist
 from biplist import writePlist
 
 from pymobiledevice.lockdown import LockdownClient
-from pymobiledevice.util.bplist import BPlistReader
 from qt4i.driver.tools.logger import get_logger
 from qt4i.driver.tools.sched import PortManager
 from qt4i.driver.tools.dt import DT
@@ -125,6 +126,8 @@ class WebKitRemoteDebugProtocol(object):
             
     def recv(self, size=4):
         data = ''
+        if PY3:
+            data = b''
         while len(data) < size:
             chunk = self._sock.recv(size-len(data))
             if not chunk or len(chunk) == 0:
@@ -133,12 +136,12 @@ class WebKitRemoteDebugProtocol(object):
         return data     
     
     def _plist_to_bin(self, plist):
-        f = StringIO.StringIO()
+        f = BytesIO()
         writePlist(plist, f)
         return f.getvalue()
     
     def _plist_from_bin(self, data):
-        f = StringIO.StringIO(data)
+        f = BytesIO(data)
         return readPlist(f)
     
     def _init_app_id(self):
@@ -301,20 +304,13 @@ class WebKitRemoteDebugProtocol(object):
         self.send_webkit_socket_data(data, self.page_id)
         self.logger.info(self.recv_webkit_socket_data())  
         
-#         data = {"method":"CSS.getSupportedCSSProperties"}   #测试大数据的plist
-#         self.send_webkit_socket_data(data)
-#         print self.recv_webkit_socket_data()       
-    
     def init_inspector(self):
         self._init_app_id()
-#         self.page_id = self.request_current_page_id()
-#         self._setup_webkit_socket(self.page_id)
-#         self._enable_inspector()
          
     def send_webkit_message(self, message): 
         self.logger.info('='*80)
         self.logger.info("request:%s" % message)
-        data =  self._plist_to_bin(message)
+        data = self._plist_to_bin(message)
         data_len = len(data)
         for i in xrange(0, data_len, self.MAX_PLIST_LEN):
             is_partial = data_len - i > self.MAX_PLIST_LEN
@@ -322,9 +318,19 @@ class WebKitRemoteDebugProtocol(object):
                 tmp_data = data
             else:
                 if is_partial:
-                    tmp_data = {self.PARTIAL_MSG: Data(data[i:i+self.MAX_PLIST_LEN])}
+                    partial_msg = data[i:i + self.MAX_PLIST_LEN]
+                    if PY2:
+                        partial_msg = Data(partial_msg)
+                    else:
+                        partial_msg = partial_msg.encode()
+                    tmp_data = {self.PARTIAL_MSG: partial_msg}
                 else:
-                    tmp_data = {self.FINAL_MSG: Data(data[i:data_len - i])}
+                    final_msg = data[i:data_len - i]
+                    if PY2:
+                        final_msg = Data(final_msg)
+                    else:
+                        final_msg = final_msg.encode()
+                    tmp_data = {self.FINAL_MSG: final_msg}
                 tmp_data = self._plist_to_bin(tmp_data)
             tmp_data = struct.pack('!L', len(tmp_data)) + tmp_data
             self.send(tmp_data) 
@@ -350,36 +356,20 @@ class WebKitRemoteDebugProtocol(object):
             self.msgbuf.append(data)
             return self.recv_webkit_response()
     
-    def send_system_message(self, message):
-        payload = plistlib.writePlistToString(message)
-        l = struct.pack("!L", len(payload))
-        self.send(l + payload)
-        
-    def recv_system_message(self):
-        data = self.recv(4)
-        l = struct.unpack('!L', data)[0]
-        payload = self.recv(l)
-        if not payload:
-            return None
-        if payload.startswith("bplist00"):
-            return BPlistReader(payload).parse()
-        elif payload.startswith("<?xml"):
-            #HAX lockdown HardwarePlatform with null bytes
-            payload = sub('[^\w<>\/ \-_0-9\"\'\\=\.\?\!\+]+','', payload.decode('utf-8')).encode('utf-8')
-            return plistlib.readPlistFromString(payload)
-        else:
-            raise Exception("recvPlist invalid data : %s" % payload[:100].encode("hex"))        
-        
     def send_webkit_socket_data(self, data, page_id):
         if page_id != self.page_id:
             self._setup_webkit_socket(page_id)
         self.seq += 1
         data["id"] = self.seq
         data = json.dumps(data)
-        data = {'__argument': {'WIRSenderKey': self.sender_key, 
+        if PY2:
+            wrapped_data = Data(data)
+        else:
+            wrapped_data = data.encode()
+        data = {'__argument': {'WIRSenderKey': self.sender_key,
                                'WIRConnectionIdentifierKey': self.conn_id, 
                                'WIRApplicationIdentifierKey': self.app_id, 
-                               'WIRSocketDataKey': Data(data), 
+                               'WIRSocketDataKey': wrapped_data,
                                'WIRPageIdentifierKey': int(page_id)
                                }, 
                 '__selector': EnumSelector.SEND_FORWARD_SOCKET_DATA}
@@ -390,22 +380,17 @@ class WebKitRemoteDebugProtocol(object):
         while True:
             try:
                 response = self.recv_webkit_response()
-            except socket.timeout, e:
+            except socket.timeout:
                 if pages_changed:
                     raise WIPageUpdateError('Retry to get new page id.')
                 else:
-                    raise e
+                    raise
             self.logger.info('response: %s' % response)
             selector = response['__selector']
             if selector == EnumSelector.ON_APP_SENT_LISTING:
                 self.logger.info("Pages may change!")
                 pages_changed = True
                 continue
-#                 new_pages = [p for p in response['__argument']['WIRListingKey'].keys()]
-#                 self.logger.info("cached_pages: %s \n new_pages: %s"%(sorted(self.cached_pages), sorted(new_pages)))
-#                 if sorted(self.cached_pages) == sorted(new_pages):
-#                     continue
-#                 raise WIPageUpdateError("Pages[%s]" % response['__argument']['WIRListingKey'])
             elif selector != EnumSelector.ON_APP_SENT_DATA or \
                 response['__argument']['WIRApplicationIdentifierKey'] != self.app_id:
                 continue
@@ -462,6 +447,8 @@ class SimulatorProtocol(WebKitRemoteDebugProtocol):
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         cmd = ["xcrun", "simctl", "getenv", udid, "RWI_LISTEN_SOCKET"]
         webinspector_unix_sock = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+        if PY3:
+            webinspector_unix_sock = webinspector_unix_sock.decode()
         webinspector_unix_sock = webinspector_unix_sock.strip('\n')
         self.logger.debug('webinspector socket:%s' % webinspector_unix_sock)
         #'/private/tmp/com.apple.launchd.aVC7CJkaJq/com.apple.webinspectord_sim.socket'
@@ -470,7 +457,7 @@ class SimulatorProtocol(WebKitRemoteDebugProtocol):
 
     def _get_webinspector_socket_below_xcode93(self, udid):
         sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-        wi_port = PortManager().get_port('web', udid)
+        wi_port = PortManager.get_port('web', udid)
         if wi_port is None:
             wi_port = 27753
         self.logger.info('webport: %s'  %  wi_port)
@@ -486,16 +473,3 @@ class SimulatorProtocol(WebKitRemoteDebugProtocol):
         
     def __del__(self):
         self.stop()
-
-
-if __name__ == '__main__':
-    wk = RealDeviceProtocol('com.tencent.qq.dailybuild', 'bf416c56bbf77d74bf075c66046219f03c71e5e1')
-#     wk = SimulatorProtocol('com.apple.mobilesafari','A438FDC7-E0CE-4812-A997-31C41E759E7F')
-#     wk = SimulatorProtocol('com.tencent.qq.dailybuild','FACA200A-4B34-484A-8E19-E32477B61591')
-    wk.start()
-    print wk.request_current_page_id(url='barindex')
-    print wk.app_id
-    print wk.app_bundle_id
-    print wk.app_name
-    print wk.page_id
-    print wk.url

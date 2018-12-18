@@ -15,7 +15,9 @@
 '''命令行参数解析
 '''
 
-import sys, re
+import sys
+import re
+import six
 
 class Args(dict):
     '''@desc: 命令行参数解析为字典（支持格式:  -key "value" -key=value --key "value" --key=value）
@@ -39,7 +41,7 @@ class Args(dict):
     
     def update(self, _dict):
         if self.keys_to_lower:
-            for (key, value) in _dict.iteritems():
+            for (key, value) in six.iteritems(_dict):
                 self[key.lower()] = value
         else:super(self.__class__, self).update(_dict)
     

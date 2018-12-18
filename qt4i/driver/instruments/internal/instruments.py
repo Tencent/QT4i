@@ -15,14 +15,16 @@
 '''ios_driver
 '''
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
+from __future__ import absolute_import, print_function
+
 import os, re, time, urllib
-from _xcode   import Xcode
-from _timer   import ThreadTimer
-from qt4i.driver.util._args import Args
-from qt4i.driver.util._files import FileManager
+from qt4i.driver.instruments.internal._xcode   import Xcode
+from qt4i.driver.instruments.internal._timer   import ThreadTimer
+from qt4i.driver.util import Args
+from qt4i.driver.util import FileManager
 from qt4i.driver.instruments.internal._jsonp import Json
-from qt4i.driver.util._process import Process
-from qt4i.driver.util._task import Task
+from qt4i.driver.util import Process
+from qt4i.driver.util import Task
 from qt4i.driver.tools import logger
 
 from qt4i.driver.rpc import RPCClientProxy
@@ -52,10 +54,8 @@ class Instruments(object):
             manager.repair_path()
     
     def _update_environment_file(self):
-        fp = file(os.path.join(self.CurrentDirectoryPath, '_environment.js'), 'w')
-        fp.write('var Environment = %s;' % Json().dumps(self.environment, indent=4))
-        fp.flush()
-        fp.close()
+        with open(os.path.join(self.CurrentDirectoryPath, '_environment.js'), 'wb') as fd:
+            fd.write('var Environment = %s;' % Json().dumps(self.environment, indent=4))
     
     def _find_instruments_uia_result_path(self):
         if os.path.exists(self.environment.get('uia_results_path')):
@@ -69,13 +69,6 @@ class Instruments(object):
             items = FileManager(path=dir_path).get_children()
             for item in items:
                 if re.match('^instrumentscli\d+.trace$', os.path.basename(item)):
-                    '''
-                    for i in xrange(11516):
-                        _cur_dst = os.path.join(dst, 'instrumentscli%s.trace' % i)
-                        if not os.path.exists(_cur_dst):
-                            dst = _cur_dst
-                            break
-                    '''
                     fm = FileManager(path=item)
                     fm.force_copy_to(dst)
                     fm.force_delete()
@@ -141,7 +134,7 @@ class Instruments(object):
     def __notify__(self, method):
         self.logger.info(method)
         try: self.rpc.ins.notify(Json().dumps({"method": "%s" % method, "params": [{'pid': self.instruments_pid, 'environment': self.environment, 'error': self._get_err()}]}))
-        except Exception, e: self.logger.error(str(e))
+        except Exception as e: self.logger.error(str(e))
     
     def __timeout_kill_instruments__(self):
         self.instruments.stop()
@@ -193,7 +186,7 @@ class Instruments(object):
                 return
         if self.instruments_trace_complete == False and re.match('^TORPC:.+$', line):
             try: self.rpc.ins.send_result(re.sub('^TORPC:', '', line))
-            except Exception, e: self.logger.error(str(e))
+            except Exception as e: self.logger.error(str(e))
             return
         if self.instruments_trace_complete == False and re.match('^Instruments Usage Error : The specified template .+$', line, re.I):
             self.__notify__('TraceTemplateInvalid')

@@ -15,6 +15,8 @@
 '''Instruments Manager driver
 '''
 
+from __future__ import absolute_import, print_function
+
 import os
 import threading
 import time 
@@ -26,8 +28,9 @@ from qt4i.driver.tools import logger
 
 from qt4i.driver.instruments.internal._command import DeviceCommandDelegator
 from qt4i.driver.instruments.internal._jsonp import Json
-from qt4i.driver.util._process import Process
-from qt4i.driver.util._task import Task, ThreadTask
+from qt4i.driver.util import Process
+from qt4i.driver.util import Task
+from qt4i.driver.util import ThreadTask
 
 CurrentDirectoryPath = os.path.abspath(os.path.dirname(__file__))
 
@@ -157,7 +160,7 @@ class Instruments(object):
                 params_list.append("-%s" % k)
                 params_list.append("%s" % app_params[k])
             params = ' '.join(params_list)
-        for i in xrange(retry):
+        for i in range(retry):
             self.log.info("ins start app retry %d of %d times"%(i+1, retry))
             ins_py_cmd = ' '.join([self.PythonPath, '"%s"'%self.InstrumentDriverPath,
                                 '-device_udid "%s"' % self.udid,
@@ -233,7 +236,7 @@ class Instruments(object):
         :returns : boolean -- True if start successfully, False if not
         '''
         event = threading.Event()
-        if self.TasksStartedEvents.has_key(self.udid):
+        if self.udid in self.TasksStartedEvents:
             self.TasksStartedEvents[self.udid].append(event)
         else:
             self.TasksStartedEvents[self.udid] = [event]
@@ -248,7 +251,7 @@ class Instruments(object):
         :returns : boolean -- True if stop successfully, False if not
         '''
         event = threading.Event()
-        if self.TasksStoppedEvents.has_key(self.udid):
+        if self.udid in self.TasksStoppedEvents:
             self.TasksStoppedEvents[self.udid].append(event)
         else:
             self.TasksStoppedEvents[self.udid] = [event]

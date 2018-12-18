@@ -14,3 +14,9 @@
 #
 '''driver的常用辅助工具（仅限driver内部使用）
 '''
+from qt4i.driver.util._args import *
+from qt4i.driver.util._files import *
+from qt4i.driver.util._process import *
+from qt4i.driver.util._task import *
+
+__all__ = ['Args', 'FileManager', 'zip_decompress','Process', 'Task', 'ThreadTask']

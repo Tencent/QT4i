@@ -15,6 +15,8 @@
 '''XCUITest API driver
 '''
 
+from __future__ import absolute_import, print_function
+
 import os
 import time
 import select
@@ -23,12 +25,13 @@ import pkg_resources
 import traceback
 import shutil
 import subprocess
+from six import with_metaclass
 
 from qt4i.driver.tools.sched import PortManager
 from qt4i.driver.tools import logger, dt
-from qt4i.driver.util._task import Task, ThreadTask
-from qt4i.driver.util._singleton import Singleton
-from qt4i.driver.util._process import Process
+from qt4i.driver.util import Task
+from qt4i.driver.util import ThreadTask
+from qt4i.driver.util import Process
 from qt4i.driver.xctest.webdriverclient.command import Command
 from qt4i.driver.xctest.webdriverclient.errorhandler import ErrorHandler
 from qt4i.driver.xctest.webdriverclient.exceptions import WebDriverException
@@ -38,6 +41,7 @@ from qt4i.driver.xctest.webdriverclient.exceptions import ApplicationCrashedExce
 from qt4i.driver.xctest.webdriverclient.remote_connection import RemoteConnection
 from pymobiledevice.usbmux.tcprelay import ThreadedTCPServer, TCPRelay
 from testbase.conf import settings
+from testbase.util import Singleton
 
 CurrentDirectoryPath = os.path.abspath(os.path.dirname(__file__))
 
@@ -58,12 +62,12 @@ class AgentStartError(Exception):
     '''
     pass
 
-class XCUITestAgentManager(object):
+
+class XCUITestAgentManager(with_metaclass(Singleton, object)):
     '''XCUITest Agent Manager 单例类
     '''
-    __metaclass__ = Singleton
+    
     _agents = {}  # 维护Agents的实例，key为设备的udid，value为Agent实例
-    _port_manager = PortManager()  # 维护映射端口字典
     _lock = threading.Lock()
     
     @classmethod
@@ -72,13 +76,10 @@ class XCUITestAgentManager(object):
         '''
         for device_id in cls._agents:
             cls._agents[device_id].stop()
-            cls._port_manager.del_port('agent', device_id)
+            PortManager.del_port('agent', device_id)
             logger.get_logger("xctest_%s" % device_id).info('stop_agent')
         cls._agents = {}
-    
-    def __init__(self, *args, **kwargs):
-        pass
-    
+
     def start_agent(self, device_id, server_ip=DEFAULT_IP, server_port=DEFAULT_PORT, keep_alive=False, retry=3, timeout=60):
         '''启动Agent并返回
         
@@ -99,14 +100,14 @@ class XCUITestAgentManager(object):
         self.log = logger.get_logger("xctest_%s" % device_id)
         if device_id not in self._agents:
             try:
-                self._port_manager.set_port('agent', device_id, server_port)
-                server_port = self._port_manager.get_port('agent', device_id)
+                PortManager.set_port('agent', device_id, server_port)
+                server_port = PortManager.get_port('agent', device_id)
                 self.log.info('start_agent, port: %d' %server_port)
                 with self._lock:
                     self._agents[device_id] = XCUITestAgent(device_id, server_ip, server_port, keep_alive, retry, timeout)
             except:
                 self.log.exception('start_agent')
-                self._port_manager.del_port('agent', device_id)
+                PortManager.del_port('agent', device_id)
                 raise
         return self._agents[device_id]
         
@@ -124,7 +125,7 @@ class XCUITestAgentManager(object):
         '''
         if device_id in self._agents:
             self._agents[device_id].stop()
-            self._port_manager.del_port('agent', device_id)
+            PortManager.del_port('agent', device_id)
             self._agents.pop(device_id)
     
     def get_agent(self, device_id):
@@ -161,7 +162,7 @@ class XCUITestAgent(object):
     _process = None # Agent进程
     _relay_thread = None # 端口映射线程
     _agent_cmd = ''
-    CommandTimeout = settings.get('QT4I_START_APP_TIMEOUT', 40)
+    CommandTimeout = settings.get('QT4I_START_APP_TIMEOUT', 60)
     PythonPath = Task("which python").execute()
     
     LOG_FILTERED_METHODS = [
@@ -285,6 +286,7 @@ class XCUITestAgent(object):
                 '"platform=%s,id=%s"' % (self.type, self.udid),
                 'CONFIGURATION_BUILD_DIR=%s' % agent_dir])
             subprocess.call(build_for_test_cmd, shell=True)
+            self.log.debug("build XCTestAgent:%s" % build_for_test_cmd)
         return agent_dir
 
     def _get_xcodebuild_agent_cmd_for_simulator(self, xcode_version):
@@ -351,7 +353,6 @@ class XCUITestAgent(object):
                 '-destination "platform=%s,id=%s"' % (self.type, self.udid),
                 'test'])
         # 清理遗留的xcodebuild进程
-        print self._agent_cmd
         Process().kill_process_by_name(self._agent_cmd.replace('"', ''))
         Process().kill_process_by_port(self._server_port)
         start_time = time.time()
@@ -415,16 +416,17 @@ class XCUITestAgent(object):
         :returns: boolean
         '''
         try:
+            self._command_executor.set_timeout(1)
             response = self._execute(Command.HEALTH)
+            self._command_executor.reset_timeout()
             return response['value'] == 'XCTestAgent is ready'
-        
         except XCTestAgentDeadException:
             self.log.exception('XCTestAgentDead')
             # Agent无法退到后台，重启手机
             try:
                 self.log.info('Reboot device %s' % self.udid)
                 dt.DT().reboot(self.udid)
-                for _ in xrange(20):
+                for _ in range(20):
                     device = dt.DT().get_device_by_udid(self.udid)
                     if device is not None:
                         break
@@ -436,8 +438,8 @@ class XCUITestAgent(object):
         except XCTestAgentTimeoutException:
             if self._relay_error:
                 self.log.error("TcpRelay error:%s" % self._relay_error)
-            self.stop(True)
-                
+                self.stop()
+    
         return False
     
     def has_session(self):
@@ -507,7 +509,7 @@ class XCUITestAgent(object):
         :param command: 指令名称
         :type command: str
         :param params: 指令参数集
-        :type params: dict 例如 {bundleId: com.tencent.qq.dailybuild.test}
+        :type params: dict 例如 {bundleId: com.tencent.test}
         :param timeout: 指令执行超时等待时常
         :type timeout: int
         :returns: 返回结果，dict
@@ -532,7 +534,7 @@ class XCUITestAgent(object):
             response = self.start_session(params, timeout)
             
         elif command == Command.QUIT:
-            if params.has_key('sessionId'):
+            if 'sessionId' in params:
                 response = self._execute(command, params)
             else:
                 response = {}

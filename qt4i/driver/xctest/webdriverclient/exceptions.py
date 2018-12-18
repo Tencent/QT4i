@@ -74,7 +74,7 @@ class NoSuchWindowException(InvalidSwitchToTargetException):
     To find the current set of active window handles, you can get a list 
     of the active window handles in the following way::
 
-        print driver.window_handles
+        driver.window_handles
 
     """
     pass

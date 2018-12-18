@@ -15,13 +15,12 @@
 '''连接远程WebDriverAgent服务
 '''
 
+from __future__ import absolute_import, print_function
+
 import socket
 import string
 import base64
 import json
-
-from qt4i.driver.tools import logger as logging
-from testbase.conf import settings
 
 try:
     import http.client as httplib
@@ -32,6 +31,8 @@ except ImportError: # above is available in py3+, below is py2.7
     import urllib2 as url_request
     import urlparse as parse
 
+from testbase.conf import settings
+from qt4i.driver.tools import logger as logging
 from qt4i.driver.xctest.webdriverclient.command import Command
 from qt4i.driver.xctest.webdriverclient.errorhandler import ErrorCode
 from qt4i.driver.xctest.webdriverclient.exceptions import XCTestAgentTimeoutException
@@ -550,7 +551,7 @@ class RemoteConnection(object):
                     resp.close()
                 
             except socket.timeout:
-                self.logger.exception('Remote Connection timeout')
+                self.logger.error('Remote Connection timeout')
                 raise XCTestAgentTimeoutException('XCTestAgent response is timed out')
-            except Exception, e:
+            except Exception as e:
                 self.logger.error('Remote Connection:%s' % str(e))

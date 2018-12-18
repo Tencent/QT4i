@@ -82,7 +82,7 @@ def get_logger(logger_name='driverserver'):
         
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.WARNING)
-        
+
         fmt = "[%(asctime)s][pid:%(process)d][tid:%(thread)d][%(levelname)s] %(message)s"
         formatter = logging.Formatter(fmt)
         formatter2 = logging.Formatter(fmt, TIME_FORMAT)
@@ -204,6 +204,3 @@ def get_match_pattern(key_word):
     for key in key_word:
         pattern += '.*' + key + '.*|'
     return pattern[0:len(pattern)-1]
-
-if __name__ == '__main__':
-    print get_match_pattern(['requires a development team','UI Testing Bundle','invalid code signature','expired','Connection peer refused channel request'])

@@ -15,14 +15,17 @@
 '''RPC Server Host Driver
 '''
 
+from __future__ import absolute_import, print_function
+
 import os
 import base64
-from rpc import rpc_method
-from rpc import RPCEndpoint
+from qt4i.driver.rpc import rpc_method
+from qt4i.driver.rpc import RPCEndpoint
 from qt4i.driver.tools.dt import DT
 from qt4i.driver.xctest.agent import XCUITestAgentManager
 
 BUFFER_SIZE = 1024*1024*100
+
 
 class RPCServerHost(RPCEndpoint):
     """RPC Server Host API
@@ -39,7 +42,7 @@ class RPCServerHost(RPCEndpoint):
         
         :param filepath: file path of rpc server
         :type filename: str
-        :returns: xmlrpclib.Binary
+        :returns: six.xmlrpc_client.Binary
         '''
         if os.path.exists(filepath):
             with open(filepath, "rb") as fd:
@@ -126,7 +129,3 @@ class RPCServerHost(RPCEndpoint):
         stop all agents
         '''
         XCUITestAgentManager.stop_all_agents()
-    
-if __name__ == '__main__':
-    print DT().get_devices()
-    

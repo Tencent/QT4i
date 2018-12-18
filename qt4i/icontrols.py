@@ -15,24 +15,28 @@
 '''iOS基础UI控件模块
 '''
 
+from __future__ import absolute_import, print_function, division
+
 import base64
 import os
-import StringIO
 import re
 import time
 import traceback
 import uuid
-import xmlrpclib
 import hashlib
+import six
+from six import string_types
+from six import StringIO
+from six.moves.xmlrpc_client import Fault
 
-from testbase.conf    import settings
-from testbase.util    import LazyInit
-from qt4i.exceptions import  ControlAmbiguousError
-from qt4i.exceptions  import ControlNotFoundError
-from qt4i.app         import App
-from qt4i.device      import QT4i_LOGS_PATH
-from qt4i.qpath       import QPath
-from qt4i.util        import Rectangle, EnumDirect, Timeout
+from testbase.conf import settings
+from testbase.util import LazyInit
+from qt4i.exceptions import ControlAmbiguousError
+from qt4i.exceptions import ControlNotFoundError
+from qt4i.app import App
+from qt4i.device import QT4i_LOGS_PATH
+from qt4i.qpath import QPath
+from qt4i.util import Rectangle, EnumDirect, Timeout
 
 
 INS_IOS_DRIVER = True if settings.get('IOS_DRIVER', 'xctest') == 'instruments' else False
@@ -54,7 +58,7 @@ class ControlContainer(object):
         :rtype: object
         :raises: Exception
         '''
-        if not isinstance(key, basestring) or not self._locators.has_key(key): raise Exception('子控件名错误: %s' % key)
+        if not isinstance(key, string_types) or key not in self._locators: raise Exception('子控件名错误: %s' % key)
         params = self._locators.get(key)
         if isinstance(params, dict):
             cls = params.get('type')
@@ -67,19 +71,19 @@ class ControlContainer(object):
             params = {'root': root, 'locator': locator}
             if INS_IOS_DRIVER:
                 while True:
-                    if not isinstance(root, basestring): break
+                    if not isinstance(root, string_types): break
                     if re.match('^@', root):
                         root_key = re.sub('^@', '', root)
-                        if not self._locators.has_key(root_key):
+                        if root_key not in self._locators:
                             raise ControlNotFoundError('未找到父控件: %s' % root_key)
                         root_params = self._locators.get(root_key)
                         params = {'root'    : root_params.get('root'),
                                   'locator' : str(root_params.get('locator')) + str(params.get('locator'))}
                         root = root_params.get('root')                
             else:
-                if isinstance(root, basestring) and re.match('^@', root):
+                if isinstance(root, string_types) and re.match('^@', root):
                     root_key = root[1:]
-                    if not self._locators.has_key(root_key):
+                    if root_key not in self._locators:
                         raise ControlNotFoundError('未找到父控件: %s' % root_key)
                     params['root'] = self[root_key]
             if usr_name:
@@ -112,7 +116,7 @@ class ControlContainer(object):
         :type control_key: str
         :rtype: boolean
         '''
-        return self._locators.has_key(control_key)
+        return control_key in self._locators
     
     def updateLocator(self, locators):
         '''更新控件定位参数
@@ -130,9 +134,9 @@ class ControlContainer(object):
         :type childctrlname: str
         :rtype: boolean
         '''
-        print '*' * 30
-        print '提示: isChildCtrlExist 接口已过时，请使用 Element(...).wait_for_exist()'
-        print '*' * 30
+        print('*' * 30)
+        print('提示: isChildCtrlExist 接口已过时，请使用 Element(...).wait_for_exist()')
+        print('*' * 30)
         old_timeout = Element.timeout
         Element.timeout = timeout
         result = self.Controls[childctrlname].exist()
@@ -173,7 +177,7 @@ class Element(ControlContainer):
         # -*- -*- -*-
         if not isinstance(self._root, (App, Element)):
             raise Exception('element.root is invalid')
-        if self._locator is not None and not isinstance(self._locator, (QPath, basestring, int)):
+        if self._locator is not None and not isinstance(self._locator, (QPath, string_types, int)):
             raise Exception('element.locator is invalid')
         # -*- -*- -*-
         root = self._root
@@ -190,15 +194,15 @@ class Element(ControlContainer):
         self._element = LazyInit(self, '_element', self._init_element)
    
     def _check_locator(self, _locator):
-        if isinstance(_locator, basestring) and not _locator.startswith('/'): #默认为_locator为id
+        if isinstance(_locator, string_types) and not _locator.startswith('/'): #默认为_locator为id
             self.strategy = 'id'
         else:
             self.strategy = 'qpath'
 
     def _find(self, parent_id=None):
-        print '--- ' * 9
-        print 'locator : %s' % self._locator
-        print 'timeout : %s' % self.timeout.timeout
+        print('--- ' * 9)
+        print('locator : %s' % self._locator)
+        print('timeout : %s' % self.timeout.timeout)
         # --- --- --- --- --- --- --- --- ---
         result = self._app.driver.element.find_elements((str(self._locator) if self._locator else None), self.timeout.timeout, self.timeout.interval, self.strategy, parent_id)
         elements = result.get('elements', [])
@@ -220,7 +224,7 @@ class Element(ControlContainer):
             for e in elements: err_msg += '\n  %s' % e
             err_msg += '\nControlAmbiguousError 建议用 device.print_uitree() 重新分析UI树'
             raise ControlAmbiguousError(err_msg)
-        print 'element : 耗时[%s]毫秒尝试了[%s]次查找到[ element id: %s ]' % (result.get('find_time'), result.get('find_count'), element)
+        print('element : 耗时[%s]毫秒尝试了[%s]次查找到[ element id: %s ]' % (result.get('find_time'), result.get('find_count'), element))
         return element
 
     def _init_element(self):
@@ -240,10 +244,10 @@ class Element(ControlContainer):
         '''
         try:
             return bool(self._init_element())
-        except xmlrpclib.Fault as err:
+        except Fault as err:
             raise err
         except Exception as err:
-            print err
+            print(err)
         return False
 
     def wait_for_exist(self, timeout, interval):
@@ -266,9 +270,9 @@ class Element(ControlContainer):
         :return: [Element, ...]
         :rtype: list
         '''
-        if not isinstance(locator, (QPath, basestring)): raise Exception('find_elements(path) path is invalid')
+        if not isinstance(locator, (QPath, string_types)): raise Exception('find_elements(path) path is invalid')
         strategy = 'qpath'
-        if isinstance(locator, basestring) and not locator.startswith('/'):
+        if isinstance(locator, string_types) and not locator.startswith('/'):
             strategy = 'id'
         elements = []
         result = self._app.driver.element.find_elements(str(locator), self.timeout.timeout, self.timeout.interval, strategy, self._element.id)
@@ -458,7 +462,7 @@ class Element(ControlContainer):
                 if 'has no scrollable ancestor' not in err:
                     raise
         if not self.visible:  #兼容UIAutomation框架中scrollToVisible失效的场景
-            for _ in xrange(drag_times):
+            for _ in range(drag_times):
                 rate = self.rect.top / self._app.device.rect.height
                 if rate > 1:
                     self._app.driver.device.drag(0.5, 0.6, 0.5 ,0.4)
@@ -592,7 +596,7 @@ class Element(ControlContainer):
         base64_img = self._app.driver.device.capture_screen()
         device_img_data = base64.decodestring(base64_img)
         from PIL import Image
-        image_fd = StringIO.StringIO(device_img_data)
+        image_fd = StringIO(device_img_data)
         img = Image.open(image_fd)
         scale_x = self._app.driver.device.get_rect()['size']['width']*1.0/img.size[0]
         scale_y = self._app.driver.device.get_rect()['size']['height']*1.0/img.size[1]
@@ -605,7 +609,7 @@ class Element(ControlContainer):
             return element_img
         if not image_path:
             image_path = os.path.join(QT4i_LOGS_PATH, "p%s_%s.png" %(os.getpid(), uuid.uuid1()))
-        element_img.save(os.path.realpath(image_path))
+        element_img.save(os.path.abspath(image_path))
         return (os.path.isfile(image_path), image_path)
 
     def print_uitree(self):
@@ -621,7 +625,7 @@ class Element(ControlContainer):
                 'visible: %s' % ('true' if _tree['visible'] else 'false'),
                 'enabled: %s' % ('true' if _tree['enabled'] else 'false'),
                 'rect: %s' % _tree['rect']]) + '  }'
-            print _line
+            print(_line)
             for _child in _tree['children']: _print(_child, _spaces + _indent, _indent)
         _print(_ui_tree)
    
@@ -775,8 +779,7 @@ class TableView(Element):
                 locator =  QPath("/classname='Table' & maxdepth = 20")
         Element.__init__(self, root, locator, **ext)
         if isinstance(root, Window):
-            for key, value in root._locators.iteritems():
-                print 'locator:', key
+            for key, value in six.iteritems(root._locators):
                 if value['root'] == '@%s' % self.user_name:
                     self.updateLocator({key:value})
         self._cells = []
@@ -903,10 +906,10 @@ class MetisView(object):
         if offset_y is None:
             offset_y = 0.5
         self.element.long_click(duration, offset_x=offset_x, offset_y=offset_y)
-
+    
     def drag(self, from_x=0.5, from_y=0.5, to_x=0.5, to_y=0.1, duration=0.5):
         '''拖拽
-
+        
         :param from_x: 起点 x偏移百分比（从左至右为0.0至1.0）
         :type from_x: float
         :param from_y: 起点 y偏移百分比（从上至下为0.0至1.0）

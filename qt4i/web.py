@@ -15,15 +15,15 @@
 '''iOS WebView
 '''
 
+from __future__ import absolute_import, print_function, division
+
 
 import time
 import traceback
 
-from qt4i.icontrols                 import Element
-from qt4w.util                      import JavaScriptError
+from qt4i.icontrols import Element
+from qt4w.util import JavaScriptError
 from qt4w.webdriver.webkitwebdriver import WebkitWebDriver
-
-
 
 
 class IOSWebDriver(WebkitWebDriver):
@@ -51,13 +51,12 @@ class IOSWebView(Element):
         self.is_simulator = self._device.simulator
         self.title = title
         self.url_key = url
-        self._webdriver = IOSWebDriver(self)
         self.page_id = self._init_page_id()
-        print "webview init page id:%s" % self.page_id
+        print("webview init page id:%s" % self.page_id)
             
     def _init_page_id(self):
         retry = 5
-        for _ in xrange(retry):
+        for _ in range(retry):
             try:
                 return self._driver.web.get_page_id(self.bundle_id, self.title, self.url_key)
             except Exception:
@@ -65,10 +64,11 @@ class IOSWebView(Element):
                 time.sleep(1)
         raise RuntimeError('Failed to init page id reason: %s'%err)
         
-    def __getattr__(self, attr):
-        '''转发给WebDriver实现
+    @property
+    def webdriver_class(self):
+        '''WebView对应的WebDriver类
         '''
-        return getattr(self._webdriver, attr)
+        return IOSWebDriver
     
     @property
     def rect(self):
@@ -155,5 +155,6 @@ class IOSWebView(Element):
                 return result['preview']
         else:
             return result
+
     def send_keys(self, keys):
         self._driver.device.send_keys(keys)

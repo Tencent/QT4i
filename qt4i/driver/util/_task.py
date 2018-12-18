@@ -15,8 +15,13 @@
 '''此模块用于归纳基础通用子模块
 '''
 
-
-import re, sys, time, subprocess, threading, StringIO
+import re
+import sys
+import time
+import subprocess
+import threading
+from six import StringIO
+from six import PY3
 
 class Task(object):
     
@@ -41,27 +46,34 @@ class Task(object):
     def __execute__(self, out, err):
         '''使用subprocess模块执行
         '''
-        process = subprocess.Popen(self.command, bufsize=self.bufsize, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=self.shell, cwd=self.cwd, env=self.env)
+        process = subprocess.Popen(self.command, bufsize=self.bufsize, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    shell=self.shell, cwd=self.cwd, env=self.env)
         while True:
             out_line = process.stdout.readline()
+            if PY3:
+                out_line = out_line.decode()
             if out_line == '' and process.poll() != None    : break
             if out_line != '' and self.print_enable == True : sys.stdout.write(out_line)
+
             out.writelines([out_line])
             out.flush()
         while True:
             err_line = process.stderr.readline()
+            if PY3:
+                err_line = err_line.decode()
             if err_line == '' and process.poll() != None    : break
             if err_line != '' and self.print_enable == True : sys.stderr.write(err_line)
             err.writelines([err_line])
             err.flush()
-        out.seek(0);err.seek(0)
+        out.seek(0)
+        err.seek(0)
         return out, err, process.returncode
     
     def execute1(self):
         '''执行命令
         @return: stdout and stderr<StringIO>
         '''
-        out = StringIO.StringIO()
+        out = StringIO()
         self.__execute__(out, out)
         return out
     
@@ -69,7 +81,7 @@ class Task(object):
         '''执行命令
         @return: (stdout<StringIO>, stderr<StringIO>)
         '''
-        out, err = StringIO.StringIO(), StringIO.StringIO()
+        out, err = StringIO(), StringIO()
         self.__execute__(out, err)
         return out, err
     
@@ -77,7 +89,7 @@ class Task(object):
         '''执行命令
         @return: (stdout<StringIO>, stderr<StringIO>, returncode<int>)
         '''
-        out, err = StringIO.StringIO(), StringIO.StringIO()
+        out, err = StringIO(), StringIO()
         returncode = self.__execute__(out, err)[-1]
         return out, err, returncode
     
@@ -138,6 +150,8 @@ class ThreadTask(threading.Thread):
         '''回调stdout
         '''
         if self.print_enable : sys.stdout.write(line)
+        if PY3:
+            line = line.decode()
         if self.stdout_line_callback and callable(self.stdout_line_callback):
             self.stdout_line_callback(line)
     
@@ -145,6 +159,8 @@ class ThreadTask(threading.Thread):
         '''回调stderr
         '''
         if self.print_enable : sys.stderr.write(line)
+        if PY3:
+            line = line.decode()
         if self.stderr_line_callback and callable(self.stderr_line_callback):
             self.stderr_line_callback(line)
     

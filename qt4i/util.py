@@ -15,7 +15,7 @@
 '''utility module
 '''
 
-import os
+
 
 from testbase.util import Timeout as BaseTimeout
 

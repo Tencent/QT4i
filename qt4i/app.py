@@ -15,9 +15,11 @@
 '''iOS App
 '''
 
-import time, datetime
+import time
+import datetime
 
 from testbase import logger
+
 
 class App(object):
     '''iOS App基类

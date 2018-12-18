@@ -16,6 +16,7 @@
 '''
 
 import os, re, stat, shutil
+from past.builtins import xrange
 
 
 class FileManager(object):
@@ -99,7 +100,7 @@ def zip_decompress(zip_file, output_dir):
         raise Exception('not support to decompress non-zipfile')
     
     if not os.path.exists(output_dir):
-        os.makedirs(output_dir, 0777)
+        os.makedirs(output_dir, 0o777)
         
     f_zip = zipfile.ZipFile(zip_file, 'r')
     f_zip.extractall(output_dir)

@@ -14,8 +14,10 @@
 #
 '''UIAutomation和XCTest的控件映射表
 '''
+import six
 
 from tuia.qpathparser import QPathParser
+
 
 XCT_UIA_MAPS = {
     'Any': 'UIAElement',
@@ -108,9 +110,9 @@ def xctest2instruments(locator):
         new_locator += '/'
         properties = []
         for p in node.keys():
-            if isinstance(node[p][1], basestring):
+            if isinstance(node[p][1], six.string_types):
                 value = node[p][1]
-                if isinstance(node[p][1], unicode):
+                if six.PY2 and isinstance(node[p][1], unicode):
                     value = value.encode('utf-8')
                 node_str = "{}{}\'{}\'".format(p, node[p][0], value)   
             else:
@@ -119,8 +121,3 @@ def xctest2instruments(locator):
         properties = ' & '.join(properties)
         new_locator += properties.decode('utf-8')
     return new_locator
-
-
-if __name__ == '__main__':
-    locator = u"/classname='UIAWindow' && instance=4 && name~='QUIActionSheetTest'/classname='Table' & label='姓名'/classname='Cell' && visible=true"
-    print xctest2instruments(locator)

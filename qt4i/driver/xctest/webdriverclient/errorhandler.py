@@ -15,6 +15,10 @@
 '''异常处理器
 '''
 
+from __future__ import absolute_import, print_function
+
+import six
+
 from qt4i.driver.xctest.webdriverclient.exceptions import ElementNotSelectableException
 from qt4i.driver.xctest.webdriverclient.exceptions import ElementNotVisibleException
 from qt4i.driver.xctest.webdriverclient.exceptions import InvalidElementStateException
@@ -39,10 +43,7 @@ from qt4i.driver.xctest.webdriverclient.exceptions import ApplicationCrashedExce
 from qt4i.driver.xctest.webdriverclient.exceptions import XCTestAgentDeadException
 from qt4i.driver.xctest.webdriverclient.exceptions import SendKeysFailedException
 
-try:
-    basestring
-except NameError:  # Python 3.x
-    basestring = str
+
 
 
 class ErrorCode(object):
@@ -178,7 +179,7 @@ class ErrorHandler(object):
         
         if isinstance(status, int):
             value_json = response.get('value', None)
-            if value_json and isinstance(value_json, basestring):
+            if value_json and isinstance(value_json, six.string_types):
                 try:
                     import json
                     value = json.loads(value_json)
@@ -190,7 +191,7 @@ class ErrorHandler(object):
                     raise exception_class(response, message)
 
         value = response['value']
-        if isinstance(value, basestring):
+        if isinstance(value, six.string_types):
             if exception_class in self.ERROR_IN_RESPONSE_EXCEPTIONS:
                 raise exception_class(response, value)
             raise exception_class(value)

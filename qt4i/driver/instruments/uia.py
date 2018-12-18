@@ -15,13 +15,15 @@
 '''UIAutomation API driver
 '''
 
+from __future__ import absolute_import, print_function
+
 import base64
 import os
 import time
 import urllib
 import uuid
 
-from ins import Instruments
+from qt4i.driver.instruments.ins import Instruments
 from qt4i.driver.rpc import rpc_method
 from qt4i.driver.rpc import RPCEndpoint
 from qt4i.driver.tools import mobiledevice

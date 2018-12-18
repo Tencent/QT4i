@@ -15,6 +15,8 @@
 '''QT4i命令
 '''
 
+from __future__ import absolute_import, print_function
+
 import argparse
 import os
 import logging
@@ -26,13 +28,14 @@ from testbase.management import Command
 from testbase.management import ArgumentParser
 from qt4i.device import DeviceServer
 from qt4i.util import less_to
-from qt4i.driver.util._files import zip_decompress
+from qt4i.driver.util import zip_decompress
 from qt4i.version import version as qt4i_version
 
 DEFAULT_IP = '0.0.0.0'
 DEFAULT_PORT = 12306
 DEFAULT_AGENT_PORT = 8100
 DEFAULT_PID_FILE = '/tmp/driverserver.pid'
+
 
 class StartDriver(Command):
     '''启动Driver

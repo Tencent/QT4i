@@ -19,7 +19,7 @@ import time, re, collections, threading
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 
 class Timer:
-    '''@desc: 等待计时器（此类被设计成动静混合结构，以期满足静态的需求）
+    '''等待计时器（此类被设计成动静混合结构，以期满足静态的需求）
     '''
     interval = 0.1  # (秒) 循环等待步长
     
@@ -47,7 +47,6 @@ class Timer:
         self.callback = callback
         self.callback_args = callback_args
         self.timeout_seconds = self.convert_timeout_to_seconds(self.timeout)
-        print 'waiting to: %s' % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.timeout_seconds))
         self.__wait__(self.timeout_seconds, self.interval, self.callback, *self.callback_args)
     
     @classmethod
@@ -113,7 +112,7 @@ class Timer:
     
     @classmethod
     def __wait__(cls, timeout_seconds, interval=interval, callback=None, *callback_args):
-        while(round(time.mktime(time.localtime()), 3) - round(timeout_seconds, 3) < 0):time.sleep(interval)
+        while(time.mktime(time.localtime()) - timeout_seconds < 0):time.sleep(interval)
         if callable(callback):callback(*callback_args)
     
     @classmethod

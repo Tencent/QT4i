@@ -15,6 +15,8 @@
 '''iOS设备模块
 '''
 
+from __future__ import absolute_import, print_function, division
+
 import base64
 import datetime
 import os
@@ -25,6 +27,9 @@ import time
 import uuid
 import socket
 import traceback
+import six
+from six import PY3
+from six import PY2
 
 from testbase import context
 from testbase.conf import settings
@@ -32,10 +37,11 @@ from testbase.resource import LocalResourceHandler
 from testbase.resource import LocalResourceManagerBackend
 from testbase.resource import TestResourceManager
 from testbase import logger
-from util import EnumDirect, Rectangle
+from qt4i.util import EnumDirect, Rectangle
 
 from qt4i.driver.rpc import RPCClientProxy
-from qt4i.driver.util._process import Process
+from qt4i.driver.util import Process
+
 
 QT4i_LOGS_PATH = os.path.abspath('_attachments')
 if not os.path.exists(QT4i_LOGS_PATH):
@@ -75,6 +81,7 @@ class DeviceServer(object):
         self._agent_port = agent_port
         self._driver_type = driver_type
         self._endpoint_clss = endpoint_clss
+        self._python = "python3" if PY3 else "python"
         if self._udid:
             self.pidfile = '/tmp/driverserver_%s.pid' % self._udid
         else:
@@ -84,37 +91,47 @@ class DeviceServer(object):
         elif hasattr(settings, 'QT4I_ENDPOINT_CLSS'):
             self._endpoint_clss = ','.join([self._endpoint_clss, settings.QT4I_ENDPOINT_CLSS])
         
-    def _wait_for_started(self, timeout=30):
+    def _wait_for_started(self, timeout=60):
         begin_time = time.time()
         while time.time() - begin_time <= timeout:
             try:
                 server = RPCClientProxy('/'.join(["http://%s:%s" % (self._addr, self._port), 'host/']), allow_none=True, encoding=Encoding)
                 if server.echo():
-                    print 'server is ready'
+                    print('server is ready')
                     return True
-            except: 
-                print 'server is not ready...'
+            except:
+                print('server is not ready...')
             time.sleep(0.2)
         raise Exception('DeviceServer failed to start.')
     
     def start(self):
         '''启动
         '''
+
         if self._udid:
             if self._endpoint_clss:
-                cmd = 'python %s -t %s --pidfile %s -p %d -u %s -a %d -r %s start' % (self._script, self._driver_type, 
-                                                                                      self.pidfile, self._port, 
-                                                                                      self._udid, self._agent_port,
-                                                                                      self._endpoint_clss)
+                cmd = '%s %s -t %s --pidfile %s -p %d -u %s -a %d -r %s start' % (self._python,
+                                                                                  self._script,
+                                                                                  self._driver_type,
+                                                                                  self.pidfile,
+                                                                                  self._port,
+                                                                                  self._udid,
+                                                                                  self._agent_port,
+                                                                                  self._endpoint_clss)
             else:
-                cmd = 'python %s -t %s --pidfile %s -p %d -u %s -a %d start' % (self._script, self._driver_type, 
-                                                                                self.pidfile, self._port, 
-                                                                                self._udid, self._agent_port)
+                cmd = '%s %s -t %s --pidfile %s -p %d -u %s -a %d start' % (self._python,
+                                                                            self._script,
+                                                                            self._driver_type,
+                                                                            self.pidfile,
+                                                                            self._port,
+                                                                            self._udid,
+                                                                            self._agent_port)
         else:
             if self._endpoint_clss:
-                cmd = 'python %s -t %s -p %d -r %s start' % (self._script, self._driver_type, self._port, self._endpoint_clss)
+                cmd = '%s %s -t %s -p %d -r %s start' % (self._python, self._script, self._driver_type, self._port, self._endpoint_clss)
             else:
-                cmd = 'python %s -t %s -p %d start' % (self._script, self._driver_type, self._port)
+                cmd = '%s %s -t %s -p %d start' % (self._python, self._script, self._driver_type, self._port)
+                print(cmd)
                 
         subprocess.Popen(cmd, shell=True)
         self._wait_for_started()
@@ -123,28 +140,43 @@ class DeviceServer(object):
         '''停止
         '''
         if self._udid:
-            subprocess.Popen('python %s --pidfile %s -p %d -u %s stop' % (self._script, self.pidfile, self._port, self._udid), shell=True)
+            subprocess.Popen('%s %s --pidfile %s -p %d -u %s stop' % (self._python, self._script, self.pidfile, self._port, self._udid), shell=True)
         else:
-            subprocess.Popen('python %s --pidfile %s -p %d stop' % (self._script, self.pidfile, self._port), shell=True)
+            subprocess.Popen('%s %s --pidfile %s -p %d stop' % (self._python, self._script, self.pidfile, self._port), shell=True)
         
     def restart(self):
         '''重启
         '''
         if self._udid:
             if self._endpoint_clss:
-                cmd = 'python %s -t %s --pidfile %s -p %d -u %s -a %d -r %s restart' % (self._script, self._driver_type, 
-                                                                                        self.pidfile, self._port, 
-                                                                                        self._udid, self._agent_port,
-                                                                                        self._endpoint_clss)
+                cmd = '%s %s -t %s --pidfile %s -p %d -u %s -a %d -r %s restart' % (self._python,
+                                                                                    self._script,
+                                                                                    self._driver_type,
+                                                                                    self.pidfile,
+                                                                                    self._port,
+                                                                                    self._udid,
+                                                                                    self._agent_port,
+                                                                                    self._endpoint_clss)
             else:
-                cmd = 'python %s -t %s --pidfile %s -p %d -u %s -a %d restart' % (self._script, self._driver_type, 
-                                                                                  self.pidfile, self._port, 
-                                                                                  self._udid, self._agent_port)
+                cmd = '%s %s -t %s --pidfile %s -p %d -u %s -a %d restart' % (self._python,
+                                                                              self._script,
+                                                                              self._driver_type,
+                                                                              self.pidfile,
+                                                                              self._port,
+                                                                              self._udid,
+                                                                              self._agent_port)
         else:
             if self._endpoint_clss:
-                cmd = 'python %s -t %s -p %d -r %s restart' % (self._script, self._driver_type, self._port, self._endpoint_clss)
+                cmd = '%s %s -t %s -p %d -r %s restart' % (self._python,
+                                                           self._script,
+                                                           self._driver_type,
+                                                           self._port,
+                                                           self._endpoint_clss)
             else:
-                cmd = 'python %s -t %s -p %d restart' % (self._script, self._driver_type, self._port)
+                cmd = '%s %s -t %s -p %d restart' % (self._python,
+                                                     self._script,
+                                                     self._driver_type,
+                                                     self._port)
             
         subprocess.Popen(cmd, shell=True)
         self._wait_for_started()
@@ -154,19 +186,31 @@ class DeviceServer(object):
         '''
         if self._udid:
             if self._endpoint_clss:
-                cmd = 'python %s -t %s --pidfile %s -p %d -u %s -a %d -r %s debug' % (self._script, self._driver_type, 
-                                                                                          self.pidfile, self._port, 
-                                                                                          self._udid, self._agent_port,
-                                                                                          self._endpoint_clss)
+                cmd = '%s %s -t %s --pidfile %s -p %d -u %s -a %d -r %s debug' % (self._python,
+                                                                                  self._script,
+                                                                                  self._driver_type,
+                                                                                  self.pidfile,
+                                                                                  self._port,
+                                                                                  self._udid,
+                                                                                  self._agent_port,
+                                                                                  self._endpoint_clss)
             else:
-                cmd = 'python %s -t %s --pidfile %s -p %d -u %s -a %d debug' % (self._script, self._driver_type, 
-                                                                                self.pidfile, self._port, 
-                                                                                self._udid, self._agent_port)
+                cmd = '%s %s -t %s --pidfile %s -p %d -u %s -a %d debug' % (self._python,
+                                                                            self._script,
+                                                                            self._driver_type,
+                                                                            self.pidfile,
+                                                                            self._port,
+                                                                            self._udid,
+                                                                            self._agent_port)
         else:
             if self._endpoint_clss:
-                cmd = 'python %s -t %s -p %d -r %s debug' % (self._script, self._driver_type, self._port, self._endpoint_clss)
+                cmd = '%s %s -t %s -p %d -r %s debug' % (self._python,
+                                                         self._script,
+                                                         self._driver_type,
+                                                         self._port,
+                                                         self._endpoint_clss)
             else:
-                cmd = 'python %s -t %s -p %d debug' % (self._script, self._driver_type, self._port)
+                cmd = '%s %s -t %s -p %d debug' % (self._python, self._script, self._driver_type, self._port)
 
         subprocess.Popen(cmd, shell=True)
         self._wait_for_started()
@@ -180,7 +224,7 @@ class DeviceServer(object):
                 with open(self.pidfile, 'r') as pf:
                     pid = int(pf.read().strip())
             else:
-                pid =None
+                pid = None
         except (IOError, TypeError):
             pid = None
         return pid
@@ -268,8 +312,8 @@ class IOSDeviceResourceHandler(LocalResourceHandler):
 
     def iter_resource(self, res_group=None, condition=None):
         DeviceManager.update_local_devices()
-        if isinstance(condition, basestring):
-            condition = {'udid':condition}
+        if isinstance(condition, six.string_types):
+            condition = {'udid': condition}
         for dev in DeviceManager.devices:
             if condition:
                 for k in condition:
@@ -357,7 +401,7 @@ class Device(object):
         :type devicemanager: DeviceManager
         '''
         cond = {}
-        if isinstance(attrs, basestring):
+        if isinstance(attrs, six.string_types):
             cond['udid'] = attrs
         elif isinstance(attrs, dict):
             cond = attrs.copy()
@@ -389,13 +433,13 @@ class Device(object):
         self._device_resource = DeviceResource(props['host'], int(props['port']), props['udid'],  
                 props['is_simulator'], props['name'], props['version'], props['csst_uri'], props['id'])
 
-        self._base_url          = self._device_resource.driver_url
+        self._base_url = self._device_resource.driver_url
         self._ws_uri = self._device_resource.ws_uri
-        self._host              = RPCClientProxy('/'.join([self._base_url, 'host/']), self._ws_uri, allow_none=True, encoding=Encoding)
-        self._device_udid       = self._device_resource.udid
-        self._device_name       = self._device_resource.name
-        self._device_ios        = self._device_resource.version
-        self._device_simulator  = self._device_resource.is_simulator == str(True)
+        self._host = RPCClientProxy('/'.join([self._base_url, 'host/']), self._ws_uri, allow_none=True, encoding=Encoding)
+        self._device_udid = self._device_resource.udid
+        self._device_name = self._device_resource.name
+        self._device_ios = self._device_resource.version
+        self._device_simulator = self._device_resource.is_simulator == str(True)
         
         if self._device_simulator:
             self._host.start_simulator(self._device_udid)
@@ -405,7 +449,7 @@ class Device(object):
         self._driver = RPCClientProxy(url, self._ws_uri, allow_none=True, encoding=Encoding)
         self._keyboard = Keyboard(self)
         logger.info('[%s] Device - Connect - %s - %s (%s)' % (datetime.datetime.fromtimestamp(time.time()), self.name, self.udid, self.ios_version))
-        #申请设备成功后，对弹窗进行处理
+        # 申请设备成功后，对弹窗进行处理
         rule = settings.get('QT4I_ALERT_DISMISS', DEFAULT_ALERT_RULE)
         if rule :
             try :
@@ -428,7 +472,7 @@ class Device(object):
         :rtype: str
         '''
         result = self._device_udid
-        if isinstance(result, unicode):
+        if PY2 and isinstance(result, six.text_type):
             return result.encode(Encoding)
         return result
     
@@ -439,7 +483,7 @@ class Device(object):
         :rtype: str
         '''
         result = self._device_name
-        if isinstance(result, unicode):
+        if PY2 and isinstance(result, six.text_type):
             return result.encode(Encoding)
         return result
         
@@ -450,7 +494,7 @@ class Device(object):
         :rtype: str
         '''
         result = self._device_ios
-        if isinstance(result, unicode):
+        if PY2 and isinstance(result, six.text_type):
             return result.encode(Encoding)
         return result
 
@@ -537,7 +581,7 @@ class Device(object):
             if hasattr(self, 'wifi') and self.wifi: #关闭host代理
                 self.reset_host_proxy()            
         except Exception:
-            print traceback.format_exc()
+            traceback.print_exc()
         finally:
             try:
                 self._test_resources.release_resource("ios", self._device_resource.resource_id)
@@ -575,7 +619,7 @@ class Device(object):
             base64_img = self._driver.device.capture_screen()
             if not image_path:
                 image_path = os.path.join(QT4i_LOGS_PATH, "p%s_%s.png" %(os.getpid(), uuid.uuid1()))
-            with open(os.path.realpath(image_path), "wb") as fd:
+            with open(os.path.abspath(image_path), "wb") as fd:
                 fd.write(base64.decodestring(base64_img))
             return (os.path.isfile(image_path), image_path)
         except:
@@ -600,8 +644,8 @@ class Device(object):
                 'value: %s' % ('"%s"' % _tree['value'] if _tree['value'] else 'null'),
                 'visible: %s' % ('true' if _tree['visible'] else 'false'),
                 'enabled: %s' % ('true' if _tree['enabled'] else 'false'),
-                'rect: %s' % _tree['rect'] if _tree.has_key('rect') else '']) + '  }'
-            print _line
+                'rect: %s' % _tree['rect'] if 'rect' in _tree else '']) + '  }'
+            print(_line)
             for _child in _tree['children']: _print(_child, _spaces + _indent, _indent)
         _print(_ui_tree)
         if need_back:
@@ -770,7 +814,8 @@ class Device(object):
         '''
         begin_time = time.time()
         result = self._driver.device.install(app_path) 
-        logger.info("安装被测应用耗时：%s"  %  round(time.time() - begin_time, 3))
+        count_time = time.time() - begin_time
+        logger.info("安装被测应用耗时：%.3fs" % count_time)
         return result
     
     def uninstall(self, bundle_id):
@@ -793,7 +838,7 @@ class Device(object):
         crash_log = self._driver.device.get_crash_log(procname)
         if crash_log:
             crash_log_path = os.path.join(QT4i_LOGS_PATH, "%s_%s.crash" %(procname, uuid.uuid1()))
-            with open(os.path.realpath(crash_log_path), "wb") as fd:
+            with open(os.path.abspath(crash_log_path), "wb") as fd:
                 fd.write(crash_log)
             return crash_log_path
         else:
@@ -920,10 +965,10 @@ class Device(object):
         except:
             return self._driver.device.get_log()
         
-    def get_syslog(self, watchtime, processName=None):
+    def get_syslog(self, watchtime, process_name=None):
         '''获取手机系统日志
         '''
-        return self._driver.device.get_syslog(watchtime, processName)
+        return self._driver.device.get_syslog(watchtime, process_name)
         
     def cleanup_log(self):
         '''清理交互日志

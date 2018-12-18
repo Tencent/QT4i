@@ -15,13 +15,13 @@
 '''远程控制的截屏服务
 '''
 
+from __future__ import absolute_import, print_function
+
 import Queue
 import threading
 import time
-import SocketServer
 import struct
 import subprocess
-import urllib
 import re
 import os
 import traceback
@@ -30,10 +30,14 @@ import signal
 import argparse
 import atexit
 import sys
+from six.moves.socketserver import BaseRequestHandler
+from six.moves.socketserver import TCPServer
+from six.moves.socketserver import ThreadingMixIn
+from six.moves.urllib.request import urlopen
 
 
 from qt4i.driver.tools import logger as logging
-from qt4i.driver.util._process import Process
+from qt4i.driver.util import Process
 
 
 DEFAULT_IP = '0.0.0.0'
@@ -230,12 +234,12 @@ class Daemon(object):
         raise NotImplementedError
 
 
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+class ThreadedTCPServer(ThreadingMixIn, TCPServer):
     allow_reuse_address = True
     request_queue_size = 16
 
 
-class ScreenConsumer(SocketServer.BaseRequestHandler):
+class ScreenConsumer(BaseRequestHandler):
 
     def setup(self):
         self.screenqueue = Queue.Queue(24)
@@ -300,7 +304,7 @@ class ScreenCaptureService(Daemon):
 class MJpegClient(object):
 
     def __init__(self, url):
-        self.stream = urllib.urlopen(url)
+        self.stream = urlopen(url)
         self.boundary = None
 
     def parse_mjpeg_boundary(self):
@@ -501,7 +505,6 @@ if __name__ == '__main__':
     sc = ScreenCaptureService(args.pidfile, args.udid, args.listen_port, args.mjpeg_port)
 
     if args.func == 'start':
-        print 'hello'
         sc.start()
 
     elif args.func == 'stop':

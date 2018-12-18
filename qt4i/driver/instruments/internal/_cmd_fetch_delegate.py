@@ -14,7 +14,9 @@
 #
 '''用于与Server通信（xmlrpc）
 '''
-import os, re, sys, socket
+from __future__ import absolute_import, print_function
+
+import os, re, sys, socket, six
 from qt4i.driver.rpc import RPCClientProxy
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 
@@ -39,7 +41,7 @@ class Args(dict):
     
     def update(self, _dict):
         if self.keys_to_lower:
-            for (key, value) in _dict.iteritems():
+            for (key, value) in six.iteritems(_dict):
                 self[key.lower()] = value
         else:super(self.__class__, self).update(_dict)
     
@@ -90,11 +92,11 @@ class Rpc(object):
         if self.rpc_method == 'send_result_and_get_next' : return self.send_result_and_get_next()
         if self.rpc_method == 'send_result'              : self.send_result()
 
-# -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 
 if __name__ == '__main__':
     try: sys.stdout.write(Rpc(**Args()).rpc_exec() or '') 
-    except Exception, e:
-        file(os.path.join(os.path.dirname(__file__), '_cmd_fetch_delegate.error.log'), 'w').write(repr(e))
+    except Exception as e:
+        with open(os.path.join(os.path.dirname(__file__), '_cmd_fetch_delegate.error.log'), 'w') as fd:
+            fd.write(repr(e))
         sys.stdout.write(repr(e))
         raise e

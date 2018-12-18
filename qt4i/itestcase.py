@@ -15,12 +15,15 @@
 '''qt4i测试用例基类模块
 '''
 
+from __future__ import absolute_import, print_function
+
 import os
 import time
 import traceback
 
 from testbase.testcase import TestCase
-from qt4i.device       import Device, QT4i_LOGS_PATH
+from qt4i.device import Device, QT4i_LOGS_PATH
+
 
 class iTestCase(TestCase):
     '''QT4i测试用例基类

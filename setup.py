@@ -18,7 +18,7 @@ from setuptools import setup, find_packages, Command
 from setuptools.command.bdist_egg import bdist_egg as orig_bdist_egg
 
 DATA_PACKAGES = ["qt4i.driver"]
-BASE_DIR = os.path.realpath(os.path.dirname(__file__))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def generate_version():
@@ -89,6 +89,9 @@ if __name__ == "__main__":
       },
       classifiers=[
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
       ],
       url="https://github.com/Tencent/QT4i",
       project_urls={

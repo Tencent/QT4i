@@ -15,16 +15,17 @@
 '''XCUITest API driver
 '''
 
+from __future__ import absolute_import, print_function
+
 import base64
 import os
 import time
 import uuid
 import re
-import urllib2
 import json
 import subprocess
-
-from tuia.qpathparser import QPathParser
+from six.moves.urllib.request import urlopen
+from six.moves.urllib.request import Request
 
 from qt4i.driver.rpc import rpc_method
 from qt4i.driver.rpc import RPCEndpoint
@@ -42,6 +43,7 @@ from qt4i.driver.util.uimap import UIA_XCT_MAPS
 from qt4i.driver.xctest.webdriverclient.errorhandler import ErrorCode
 from qt4i.driver.util.modalmap import DeviceProperty
 from testbase.conf import settings
+from tuia.qpathparser import QPathParser
 from pymobiledevice import lockdown
 
 
@@ -54,16 +56,16 @@ TMP_DIR_PATH = settings.get('QT4I_TMP_DIR_PATH', '/tmp')
 def convert_to_qpath(element):
     '''转换成qpath
     '''
-    if element.has_key('type'):
+    if 'type' in element:
         element['classname'] = element['type']
         element.pop('type')
-    if element.has_key('isEnabled'):
+    if 'isEnabled' in element:
         element['enabled'] = (element['isEnabled'] == '1')
         element.pop('isEnabled')
-    if element.has_key('isVisible'):
+    if 'isVisible' in element:
         element['visible'] = (element['isVisible'] == '1')
         element.pop('isVisible')
-    if element.has_key('rect'):
+    if 'rect' in element:
         element['rect']= {
             'origin': {'x': element['rect']['x'], 'y': element['rect']['y']},
             'size'  : {'width': element['rect']['width'], 'height': element['rect']['height']},
@@ -254,7 +256,9 @@ class Device(RPCEndpoint):
         desired_caps['bundleId'] = bundle_id
         ios_version = DT().get_device_by_udid(self.udid)['ios']
         if DT.compare_version(ios_version, '12.0') >= 0:
-            app_list = [app_info.keys()[0] for app_info in DT().list_apps_with_fbsimctl(self.udid, 'all')]
+            app_list = []
+            for app in DT().list_apps_with_fbsimctl('bf416c56bbf77d74bf075c66046219f03c71e5e1', 'all'):
+                app_list.extend(app.keys())
             if bundle_id not in app_list:
                 raise Exception("Failed to launch application, %s not exist" % bundle_id)
         if app_params:
@@ -262,7 +266,7 @@ class Device(RPCEndpoint):
             for k in app_params:
                 params_list.append("-%s %s" % (k, app_params[k]))
             desired_caps['arguments'] = params_list
-        for _ in xrange(retry):
+        for _ in range(retry):
             try:
                 self.agent.execute(Command.START, desired_caps)
                 break
@@ -705,7 +709,7 @@ class Device(RPCEndpoint):
         flag = False
         
         try:
-            r = urllib2.urlopen(file_url)
+            r = urlopen(file_url)
             with open(localpath, "wb") as wd:
                 while True:
                     s = r.read(1024*1024*10)
@@ -786,10 +790,8 @@ class Device(RPCEndpoint):
     def get_syslog(self, watchtime, processName=None):
         '''获取手机系统日志
         
-        :parm logFile : 观察时间
-        :type logFile : int     
-        :parm logFile : 日志文件
-        :type logFile : str
+        :parm watchtime : 观察时间
+        :type watchtime : int
         :parm processName : 手机服务名称(默认为全部查看)
         :type processName : str
         :returns: str
@@ -894,8 +896,8 @@ class Device(RPCEndpoint):
         
         if method.startswith('createFile'):
             url = "%s/stub" % self.agent.stub_server_url
-            request = urllib2.Request(url, data=json.dumps(params))
-            response = urllib2.urlopen(request)
+            request = Request(url, data=json.dumps(params))
+            response = urlopen(request)
             result = response.read() 
             result = json.loads(result)
             return result['result']
@@ -1095,7 +1097,7 @@ class Element(RPCEndpoint):
         '''
         try:
             element = self.agent.execute(Command.FIND_CHILD_ELEMENT, {'id':element_id, 'using':By.PREDICATE_STRING, 'value':predicate})['value']
-            if element.has_key('ELEMENT'):
+            if 'ELEMENT' in element:
                 return int(element['ELEMENT'])
         except NoSuchElementException:
             return
@@ -1131,7 +1133,7 @@ class Element(RPCEndpoint):
         '''
         try:
             element = self.agent.execute(Command.FIND_CHILD_ELEMENT, {'id':element_id, 'using':By.LINK_TEXT, 'value':'%s=%s' %(key, value)})['value']
-            if element.has_key('ELEMENT'):
+            if 'ELEMENT' in element:
                 return int(element['ELEMENT'])
         except NoSuchElementException:
             return
@@ -1183,7 +1185,7 @@ class Element(RPCEndpoint):
         if element_id == 1:
             raise Exception("Current element is already root element.")
         element =  self.agent.execute(Command.QTA_GET_PARENT_ELEMENT, {'id': element_id})['value']
-        if element.has_key('ELEMENT'):
+        if 'ELEMENT' in element:
             return int(element['ELEMENT'])
     
     @rpc_method
@@ -1409,13 +1411,13 @@ class Element(RPCEndpoint):
     def _convert_attrs(self, attrs):
         '''转译属性名称及对应值
         '''
-        if attrs.has_key('type'):
+        if 'type' in attrs:
             attrs['classname'] = attrs['type']
             attrs.pop('type')
-        if attrs.has_key('isEnabled'):
+        if 'isEnabled' in attrs:
             attrs['enabled'] = (attrs['isEnabled'] == '1')
             attrs.pop('isEnabled')
-        if attrs.has_key('isVisible'):
+        if 'isVisible' in attrs:
             attrs['visible'] = (attrs['isVisible'] == '1')
             attrs.pop('isVisible')
         children = []

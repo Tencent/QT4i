@@ -20,6 +20,7 @@ import os
 import re
 import signal
 import subprocess
+import six
 
 
 class Process(object):
@@ -30,10 +31,10 @@ class Process(object):
         if isinstance(port, int):
             cmd = r"lsof -nP -iTCP:%s  -sTCP:%s | awk -s '{print  $2}'" % (port, state)
             items = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-            print type(items)
+            if six.PY3:
+                items = items.decode()
             items = items.split('\n')
             items = [item for item in items if re.match(r"^\d+$", item)]
-            print items
         return items
 
     def get_processes_by_grep(self, grep=''):
@@ -46,7 +47,7 @@ class Process(object):
             keys = top_line.split(' ')
             if len(keys) != 8: raise Exception('KeysError')
             lines = lines[1:]
-            if isinstance(grep, basestring): lines = os.popen('ps -ef|grep "%s" | grep -v grep' % grep).read().split('\n')
+            if isinstance(grep, six.string_types): lines = os.popen('ps -ef|grep "%s" | grep -v grep' % grep).read().split('\n')
             for line in lines:
                 if len(line) > 0:
                     line = re.sub('^ +| $', '', line)
@@ -54,7 +55,7 @@ class Process(object):
                     values = re.split(' ', line, len(keys) - 1)
                     if len(values) != 8: raise Exception('ValuesError')
                     _dict = {}
-                    for i in xrange(8):
+                    for i in range(8):
                         key = keys[i]
                         value = values[i]
                         if re.match('^\d+$', value):
@@ -119,12 +120,11 @@ class Process(object):
         try:
             data = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
             if data:
+                if six.PY3:
+                    data = data.decode()
                 pids = data.strip().split("\n")
                 for pid in pids:
                     os.kill(int(pid), signal.SIGKILL)
         except:
             result = False
         return result
-    
-if __name__ == '__main__':
-    Process().kill_process_by_port(8100)

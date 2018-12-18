@@ -16,6 +16,7 @@
 '''JSON扩展'''
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 import json
+import six
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 
 class Json(object):
@@ -25,14 +26,14 @@ class Json(object):
             _dict = {}
             for _key, _value in obj.items():
                 if isinstance(_value, (dict, list)): _dict.update({_key.encode(encoding):self.__encode__(_value, encoding)})
-                elif isinstance(_value, basestring): _dict.update({_key.encode(encoding):_value.encode(encoding)})
+                elif isinstance(_value, six.string_types): _dict.update({_key.encode(encoding):_value.encode(encoding)})
                 else: _dict.update({_key.encode(encoding):_value})
             return _dict
         if isinstance(obj, list):
             _list = []
             for _item in obj:
                 if isinstance(_item, (dict, list)): _list.append(self.__encode__(_item, encoding))
-                elif isinstance(_item, basestring): _list.append(_item.encode(encoding))
+                elif isinstance(_item, six.string_types): _list.append(_item.encode(encoding))
                 else: _list.append(_item)
             return _list
      

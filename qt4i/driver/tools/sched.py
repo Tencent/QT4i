@@ -15,24 +15,22 @@
 '''资源的管理和分配调度工具
 '''
 
+from __future__ import absolute_import, print_function
+
 import threading
 
-from qt4i.driver.util._singleton import Singleton
 
 MAX_PORT_NUM = 50
 
 class PortManager(object):
     '''端口管理器基类
     '''
-    __metaclass__ = Singleton
     _port_maps = {}  # 维护映射端口字典的集合，key为'agent'或'web'
     _lock = threading.Lock()
     EnumPortType = ['agent', 'web']
 
-    def __init__(self, *args, **kwargs):
-        pass
-    
-    def set_port(self, port_type, udid, port=None, base=8100):
+    @classmethod
+    def set_port(cls, port_type, udid, port=None, base=8100):
         '''设置设备udid对应的端口
         
         :param port_type: 端口类型
@@ -44,24 +42,25 @@ class PortManager(object):
         :param base: 基准端口
         :type base: int
         '''
-        if port_type not in self.EnumPortType:
-            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(self.EnumPortType)))
-        if port_type not in self._port_maps:
-            with self._lock:
-                self._port_maps[port_type] = {}
+        if port_type not in PortManager.EnumPortType:
+            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(cls.EnumPortType)))
+        if port_type not in cls._port_maps:
+            with cls._lock:
+                cls._port_maps[port_type] = {}
         if not port:
             port = base
-        if udid not in self._port_maps[port_type]:
+        if udid not in cls._port_maps[port_type]:
             hash_port = hash(udid) % MAX_PORT_NUM
             while 1:
-                with self._lock:
-                    if port not in self._port_maps[port_type].values():
-                        self._port_maps[port_type][udid] = port
+                with cls._lock:
+                    if port not in cls._port_maps[port_type].values():
+                        cls._port_maps[port_type][udid] = port
                         break
                 port = base + hash_port
                 hash_port = (hash_port + 1) % MAX_PORT_NUM
     
-    def get_port(self, port_type, udid):
+    @classmethod
+    def get_port(cls, port_type, udid):
         '''通过设备udid获取对应的端口
         
         :param port_type: 端口类型
@@ -69,19 +68,20 @@ class PortManager(object):
         :param udid: 设备udid
         :type udid: str
         '''
-        if port_type not in self.EnumPortType:
-            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(self.EnumPortType)))
-        if port_type not in self._port_maps:
-            with self._lock:
-                self._port_maps[port_type] = {}
-        if udid not in self._port_maps[port_type]:
+        if port_type not in cls.EnumPortType:
+            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(cls.EnumPortType)))
+        if port_type not in cls._port_maps:
+            with cls._lock:
+                cls._port_maps[port_type] = {}
+        if udid not in cls._port_maps[port_type]:
             if port_type == 'web':
-                self.set_port(port_type, udid, base=27753)
+                cls.set_port(port_type, udid, base=27753)
             else:
-                self.set_port(port_type, udid)
-        return self._port_maps[port_type][udid]
+                cls.set_port(port_type, udid)
+        return cls._port_maps[port_type][udid]
     
-    def exist(self, port_type, udid):
+    @classmethod
+    def exist(cls, port_type, udid):
         '''判断端口字典中是否已存在该设备
         
         :param port_type: 端口类型
@@ -89,14 +89,15 @@ class PortManager(object):
         :param udid: 设备udid
         :type udid: str
         '''
-        if port_type not in self.EnumPortType:
-            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(self.EnumPortType)))
-        if port_type not in self._port_maps:
-            with self._lock:
-                self._port_maps[port_type] = {}
-        return udid in self._port_maps[port_type]
+        if port_type not in cls.EnumPortType:
+            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(cls.EnumPortType)))
+        if port_type not in cls._port_maps:
+            with cls._lock:
+                cls._port_maps[port_type] = {}
+        return udid in cls._port_maps[port_type]
     
-    def del_port(self, port_type, udid):
+    @classmethod
+    def del_port(cls, port_type, udid):
         '''从字典中删除设备及端口
         
         :param port_type: 端口类型
@@ -104,24 +105,25 @@ class PortManager(object):
         :param udid: 设备udid
         :type udid: str
         '''
-        if port_type not in self.EnumPortType:
-            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(self.EnumPortType)))
-        if port_type not in self._port_maps:
-            with self._lock:
-                self._port_maps[port_type] = {}
-        if udid in self._port_maps[port_type]:
-            with self._lock:
-                self._port_maps[port_type].pop(udid)
+        if port_type not in cls.EnumPortType:
+            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(cls.EnumPortType)))
+        if port_type not in cls._port_maps:
+            with cls._lock:
+                cls._port_maps[port_type] = {}
+        if udid in cls._port_maps[port_type]:
+            with cls._lock:
+                cls._port_maps[port_type].pop(udid)
     
-    def ports(self, port_type):
+    @classmethod
+    def ports(cls, port_type):
         '''返回端口字典
         
         :param port_type: 端口类型
         :type port_type: EnumPortType
         '''
-        if port_type not in self.EnumPortType:
-            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(self.EnumPortType)))
-        if port_type not in self._port_maps:
-            with self._lock:
-                self._port_maps[port_type] = {}
-        return self._port_maps[port_type]
+        if port_type not in cls.EnumPortType:
+            raise Exception("端口类型%s异常，正确的类型有：%s" % (port_type,  str(cls.EnumPortType)))
+        if port_type not in cls._port_maps:
+            with cls._lock:
+                cls._port_maps[port_type] = {}
+        return cls._port_maps[port_type]

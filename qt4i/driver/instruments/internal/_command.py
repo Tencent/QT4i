@@ -14,6 +14,8 @@
 #
 '''命令'''
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
+from __future__ import absolute_import, print_function
+
 import time, threading
 from qt4i.driver.tools import logger
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
@@ -164,7 +166,7 @@ class __DeviceCommand__(threading.Thread):
             self._status = self.FinishedStatus
         if True == self._print :
             log.info('DeviceCommand-%s: Result   = %s' % (self._command_id, self._result))
-            log.info('DeviceCommand-%s: Duration = %ss' % (self._command_id, round(time.time() - self._standby_timestamp, 3)))
+            log.info('DeviceCommand-%s: Duration = %ss' % (self._command_id, time.time() - self._standby_timestamp))
 
 # -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*- -*-
 
@@ -371,7 +373,7 @@ if __name__ == '__main__':
                 import sys
                 sys.stderr.write('%s\n' % '无命令')
         def run(self):
-            for i in xrange(self._cmds):
+            for i in range(self._cmds):
                 self.exec_command(i)
     
     class Case(threading.Thread):
@@ -381,7 +383,7 @@ if __name__ == '__main__':
             self.start()
         def run(self):
             _exec_command_times = list()
-            for i in xrange(self._cmds):
+            for i in range(self._cmds):
                 _cmd = {"method": "%s" % i, "params": ["%s" % i]}
                 log.info('-' * 60)
                 log.info('Case   - %s cmd --> : %s' % (i, _cmd))
@@ -395,7 +397,7 @@ if __name__ == '__main__':
                 _all_exec_command_time += item
             log.info('执行命令开销: %s\n' % (_all_exec_command_time / len(_exec_command_times)))
     
-    for i in xrange(6):
+    for i in range(6):
         case1 = Case()
         driver1 = Driver()
         driver2 = Driver()

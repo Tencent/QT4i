@@ -16,3 +16,6 @@
 
 .. _qa-m2: https://gitlab.com/m2crypto/m2crypto/blob/master/INSTALL.rst
 .. |qa-m2| replace:: M2crypto官网帮助文档
+
+.. _iosuispy: https://github.com/qtacore/iOSUISpy
+.. |iosuispy| replace:: UISpy

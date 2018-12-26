@@ -633,6 +633,16 @@ class Element(ControlContainer):
         '''返回MetisView
         '''
         return MetisView(self)
+    
+    def force_touch(self, pressure=1.0, duration=2.0):
+        '''3D touch
+
+        :param pressure: 按压力度（取值：0-1.0）
+        :type pressure: float
+        :param duration: 按压持续的时间（单位:秒）
+        :type duration: float
+        '''
+        self._app.driver.element.force_touch(self._element.id, pressure, duration)
 
 
 class Window(Element):

@@ -109,6 +109,7 @@ class Command(object):
     DOUBLE_TAP = "touchDoubleTap"
     LONG_PRESS = "touchLongPress"
     FLICK = "touchFlick"
+    FORCE_TOUCH = 'forceTouch'
 
     #HTML 5
     EXECUTE_SQL = "executeSql"

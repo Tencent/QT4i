@@ -1458,3 +1458,8 @@ class Element(RPCEndpoint):
         :type value: str
         '''
         self.agent.execute(Command.QTA_WHEEL_SELECT, {'id':element_id, 'value':value})['value']
+
+    @rpc_method
+    def force_touch(self, element_id, pressure, duration):
+        self.agent.execute(Command.FORCE_TOUCH, 
+            {'id':element_id, 'pressure':pressure, 'duration':duration})['value']

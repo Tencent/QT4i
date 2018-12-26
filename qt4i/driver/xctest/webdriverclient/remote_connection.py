@@ -419,6 +419,8 @@ class RemoteConnection(object):
                 ('POST', '/qta/device/detailInfo'),
             Command.QTA_WHEEL_SELECT:
                 ('POST', '/session/$sessionId/qta/element/$id/wheel/select'),
+            Command.FORCE_TOUCH:
+                ('POST', '/session/$sessionId/wda/element/forceTouch/$id'),
         }
 
     def execute(self, command, params):

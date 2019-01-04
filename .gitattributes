@@ -1,1 +1,3 @@
 *.js linguist-language=Python
+# Source files
+* text=auto eol=lf

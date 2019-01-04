@@ -1,6 +1,6 @@
 qtaf>=5.2.9
+six>=1.11.0
 pymobiledevice-qta
 biplist
 websocket-client
 future
-six

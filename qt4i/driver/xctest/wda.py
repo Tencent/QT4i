@@ -890,9 +890,9 @@ class Device(RPCEndpoint):
         :returns: str
         '''
         if clazz:
-            params = {'method':method, 'params':params}
-        else:
             params = {'method':method, 'params':params, 'object':clazz}
+        else:
+            params = {'method':method, 'params':params}
         
         if method.startswith('createFile'):
             url = "%s/stub" % self.agent.stub_server_url

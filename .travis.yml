@@ -6,6 +6,15 @@ matrix:
     language: generic
     env:
       - BUILD_SDIST=true
+  - os: osx
+    python: '3.5'
+    language: generic
+  - os: osx
+    python: '3.6'
+    language: generic
+  - os: osx
+    python: '3.7'
+    language: generic  
 install:
   - pip install -r requirements.txt --user
   - sudo mkdir /usr/local/man

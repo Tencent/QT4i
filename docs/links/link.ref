@@ -19,3 +19,27 @@
 
 .. _iosuispy: https://github.com/qtacore/iOSUISpy
 .. |iosuispy| replace:: UISpy
+
+.. _theos: https://github.com/theos/theos
+.. |theos| replace:: theos
+
+.. _monkey: https://github.com/AloneMonkey/MonkeyDev
+.. |monkey| replace:: MonkeyDev
+
+.. _logos: http://iphonedevwiki.net/index.php/Logos
+.. |logos| replace:: Logos
+
+.. _insert: https://github.com/Tyilo/insert_dylib
+.. |insert| replace:: insert_dylib
+
+.. _machoview: https://sourceforge.net/projects/machoview/
+.. |machoview| replace:: machoview
+
+.. _appsigner: https://github.com/DanTheMan827/ios-app-signer/releases
+.. |appsigner| replace:: ios-app-signer
+
+.. _qt4w: https://qt4w.readthedocs.io/zh_CN/latest/index.html
+.. |qt4w| replace:: qt4w
+
+.. _fbsimctl: https://github.com/facebook/FBSimulatorControl/blob/master/fbsimctl/README.md
+.. |fbsimctl| replace:: fbsimctl

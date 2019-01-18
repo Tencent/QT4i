@@ -24,6 +24,7 @@ script:
   - python tests/__init__.py
 before_deploy: echo $TRAVIS_TAG | sed 's/^.//' > version.txt
 deploy:
+  skip_existing: true
   skip_cleanup: true
   provider: pypi
   user: qta
@@ -32,4 +33,5 @@ deploy:
   distributions: sdist
   on:
     tags: true
+    python: '2.7'
     condition: $TRAVIS_TAG =~ v[0-9]+\.[0-9]+\.[0-9]+ && $BUILD_SDIST=true

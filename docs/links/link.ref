@@ -43,3 +43,6 @@
 
 .. _fbsimctl: https://github.com/facebook/FBSimulatorControl/blob/master/fbsimctl/README.md
 .. |fbsimctl| replace:: fbsimctl
+
+.. _demo: https://github.com/qtacore/QT4iDemoProj
+.. |demo| replace:: demo

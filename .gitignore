@@ -1,16 +1,37 @@
-# python编译文件
-*.pyc
-# eclipse生成的备份文件
-*.bak
-# 打包自动生成的目录
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
 build/
 dist/
 qt4i.egg-info/
 _qt4i_version_stub.py
-# 调试目录
-debug/
-# Mac系统自动生成的文件
-*.DS_Store
-docs/_build
-.settings
 version.txt
+
+# debug 
+debug/
+*.log
+
+# MacOS system auto gen
+*.DS_Store
+
+# Sphinx documentation
+docs/_build
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+Pipfile.lock
+
+# IDE
+.idea
+.vscode
+.settings
+*.bak

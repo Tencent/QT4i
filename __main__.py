@@ -20,7 +20,7 @@ import sys
 import os
 
 
-proj_root = os.path.realpath(os.path.dirname(__file__))
+proj_root = os.path.dirname(os.path.abspath(__file__))
 pythonpaths = []
 srcpypath = os.environ.get('PYTHONPATH', '')
 exlib_dir = os.path.dirname(proj_root)
@@ -32,7 +32,6 @@ for filename in os.listdir(exlib_dir):
             pythonpaths.append(lib_path)
 
 os.environ['PYTHONPATH'] = srcpypath + ':'.join(pythonpaths)
-print os.environ['PYTHONPATH']
 
 
 if __name__ == '__main__':

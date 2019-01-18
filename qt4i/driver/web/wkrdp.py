@@ -102,7 +102,7 @@ class WebKitRemoteDebugProtocol(object):
         self.host_app_ids = []
     
     @property
-    def is_simulator(self):
+    def is_complete_supported(self):
         raise NotImplementedError    
         
     def start(self):
@@ -312,26 +312,27 @@ class WebKitRemoteDebugProtocol(object):
         self.logger.info("request:%s" % message)
         data = self._plist_to_bin(message)
         data_len = len(data)
+        if self.is_complete_supported:
+            tmp_data = struct.pack('!L', len(data)) + data
+            self.send(tmp_data)
+            return
         for i in xrange(0, data_len, self.MAX_PLIST_LEN):
             is_partial = data_len - i > self.MAX_PLIST_LEN
-            if self.is_simulator:
-                tmp_data = data
-            else:
-                if is_partial:
-                    partial_msg = data[i:i + self.MAX_PLIST_LEN]
-                    if PY2:
-                        partial_msg = Data(partial_msg)
-                    else:
-                        partial_msg = partial_msg.encode()
-                    tmp_data = {self.PARTIAL_MSG: partial_msg}
+            if is_partial:
+                partial_msg = data[i:i + self.MAX_PLIST_LEN]
+                if PY2:
+                    partial_msg = Data(partial_msg)
                 else:
-                    final_msg = data[i:data_len - i]
-                    if PY2:
-                        final_msg = Data(final_msg)
-                    else:
-                        final_msg = final_msg.encode()
-                    tmp_data = {self.FINAL_MSG: final_msg}
-                tmp_data = self._plist_to_bin(tmp_data)
+                    partial_msg = partial_msg.encode()
+                tmp_data = {self.PARTIAL_MSG: partial_msg}
+            else:
+                final_msg = data[i:data_len - i]
+                if PY2:
+                    final_msg = Data(final_msg)
+                else:
+                    final_msg = final_msg.encode()
+                tmp_data = {self.FINAL_MSG: final_msg}
+            tmp_data = self._plist_to_bin(tmp_data)
             tmp_data = struct.pack('!L', len(tmp_data)) + tmp_data
             self.send(tmp_data) 
 
@@ -342,7 +343,7 @@ class WebKitRemoteDebugProtocol(object):
         l = struct.unpack('!L', data)[0]
         data = self.recv(l)
         data = self._plist_from_bin(data)
-        if self.is_simulator:
+        if self.is_complete_supported:
             return data
         if self.FINAL_MSG in data:
             data = data[self.FINAL_MSG]
@@ -408,17 +409,17 @@ class RealDeviceProtocol(WebKitRemoteDebugProtocol):
     
     def __init__(self, bundle_id='com.apple.WebKit.WebContent', udid=None):
         super(RealDeviceProtocol, self).__init__(bundle_id, udid)
-        self.partial_supported = True
+        self._partial_supported = True
         
     @property
-    def is_simulator(self): 
-        return not self.partial_supported
+    def is_complete_supported(self):
+        return not self._partial_supported
         
     def start(self):
         lockdown = LockdownClient(self.udid)
         ios_version = lockdown.allValues['ProductVersion']
         if DT.compare_version(ios_version, '11.0') >= 0: # iOS11真机以上不支持数据分割
-            self.partial_supported = False
+            self._partial_supported = False
         self.web_inspector = lockdown.startService("com.apple.webinspector")
         self._sock = self.web_inspector.s
         self._sock.setblocking(False)
@@ -465,7 +466,7 @@ class SimulatorProtocol(WebKitRemoteDebugProtocol):
         return sock
         
     @property
-    def is_simulator(self): 
+    def is_complete_supported(self):
         return True
         
     def start(self):

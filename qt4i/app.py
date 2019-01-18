@@ -16,6 +16,7 @@
 '''
 
 import time
+import re
 import datetime
 
 from testbase import logger
@@ -157,46 +158,100 @@ class App(object):
         '''
         logger.info('[%s] APP - Release - %s' % (datetime.datetime.fromtimestamp(time.time()), self._bundle_id))
         self._app_started = False
-        
-        
+
+
 class Safari(App):
     '''Safari浏览器
     '''
-    
-    
-    def __init__(self, device):
-        App.__init__(self, device, 'com.apple.safari', app_name='Safari')
+
+    def __init__(self, device=None, url_scheme=False):
+        from qt4i.device import Device
+        bundle_id = 'com.apple.mobilesafari'
+        app_name = 'Safari 浏览器'
+        if not device:
+            device = Device()
+        App.__init__(self, device, bundle_id)
+        self._url_scheme = url_scheme
+        self._app_name = app_name
         self._init_window()
-        
+
     def _init_window(self):
         from qt4i.icontrols import Element, Window
         from qt4i.qpath import QPath
         self._win = Window(self)
         self._win.updateLocator({
-            'Safari':{'type':Element, 'root':self, 'locator':"Safari"},       
-            'url输入框.未激活键盘': {'type':Element, 'root':self, 'locator':QPath("/name='URL' & maxdepth=9 & instance=1")},
-            'url输入框': {'type':Element, 'root':self, 'locator':QPath("/name~='地址|Address|URL' & maxdepth=9 & instance=1")},
-            '打开url': {'type':Element, 'root':self, 'locator':QPath("/name~='^打开$|^Open$' & maxdepth=15")},
+            'Safari': {'type': Element, 'root': self, 'locator': self._app_name},
+            'url输入框.未激活键盘': {'type': Element, 'root': self, 'locator': QPath("/name='URL' & maxdepth=9 & instance=1")},
+            'url输入框': {'type': Element, 'root': self,
+                       'locator': QPath("/name~='地址|Address|URL' & maxdepth=9 & instance=1")},
+            '打开url': {'type': Element, 'root': self, 'locator': QPath("/name~='^打开$|^Open$' & maxdepth=15")},
+            'StatusBar': {'type': Element, 'root': self,
+                          'locator': QPath("/classname = 'StatusBar' & visible = true & maxdepth = 2")},
         })
-        self._win.Controls['Safari'].click()
-    
-    def open_url(self, url, timeout=1):
-        '''打开Safari浏览器，跳转指定网页
-        
+        if self._url_scheme:
+            self._win.Controls['Safari'].click()
+        else:
+            self.start()
+
+    def open_url(self, url, page_cls=None):
+        '''打开Safari浏览器，跳转指定网，返回page_cls类的实例
+
         :param url: url地址
         :type url: str
+        :param page_cls: 用户实现的WebPage子类，默认不填写则使用基类WebPage
+        :type page_cls: qt4w.webcontrols.WebPage
+        :rtype: qt4w.webcontrols.WebPage
         '''
-        if self._win.Controls['url输入框.未激活键盘'].wait_for_exist(timeout, 0.05):
+        if self._win.Controls['url输入框.未激活键盘'].wait_for_exist(1, 0.05):
             self._win.Controls['url输入框.未激活键盘'].click()
         self._win.Controls['url输入框'].value = url
         self._win.Controls['url输入框'].send_keys('\n')
-        if self._win.Controls['打开url'].exist():
-            open_btn = self._win.Controls['打开url']
-            open_btn.click()
-            if open_btn.exist(): # 补充点击防止点击不生效
-                self.device.click2(open_btn)
+        if self._url_scheme:
+            if self._win.Controls['打开url'].exist():
+                open_btn = self._win.Controls['打开url']
+                open_btn.click()
+                if open_btn.exist(): # 补充点击防止点击不生效
+                    self.device.click2(open_btn)
+            else:
+                raise Exception("Safari没有出现\"打开\"的对话框")
         else:
-            raise Exception("Safari没有出现\"打开\"的对话框")
+            from qt4i.web import QT4iBrowserWin
+            from qt4w.webcontrols import WebPage
+            if page_cls is None:
+                page_cls = WebPage
+            web = QT4iBrowserWin(self).webview
+            statusbar_offset = self._win.Controls['StatusBar'].rect.height
+            addrbar_offset = self._win.Controls['url输入框'].rect.height
+            web.top_offset = statusbar_offset + addrbar_offset
+            return page_cls(web)
+
+    def find_by_url(self, url, page_cls=None, timeout=10):
+        '''在当前打开的页面中查找指定url,返回WebPage实例，如果未找到，返回None
+
+        :param url: 要查找的页面url
+        :type url:  str
+        :param page_cls: 用户实现的WebPage子类，默认不填写则使用基类WebPage
+        :type page_cls: qt4w.webcontrols.WebPage
+        :param timeout: 查找超时时间，单位：秒
+        :type timeout: int/float
+        :rtype: qt4w.webcontrols.WebPage
+        '''
+
+        from qt4i.web import QT4iBrowserWin
+        from qt4w.webcontrols import WebPage
+        time0 = time.time()
+        if page_cls is None:
+            page_cls = WebPage
+        pattern = re.compile(url)
+        while time.time() - time0 < timeout:
+            webview = QT4iBrowserWin(self).webview
+            page = page_cls(webview)
+            page_url = page.url
+            if page_url == url or pattern.match(page_url):
+                return page
+            time.sleep(1)
+        else:
+            raise RuntimeError('find url %s failed' % url)
 
 
 class NLCType(object):
@@ -436,4 +491,3 @@ class Preferences(App):
                 self._win.Controls['wifi_name'].click()
         self._win.Controls['返回.无线局域网'].click()
         self._win.Controls['设置'].click()
-        

@@ -429,15 +429,11 @@ class DT(with_metaclass(Singleton, object)):
         res = conn.getresponse()
         if res.status != 200: 
             raise RuntimeError('访问：%s 错误[HTTP错误码：%s]' % (url0, res.status))
-        target_size = int(res.getheader('Content-Length'))
         data = res.read()
         conn.close()
-        if len(data) != target_size:
-            return self._download_http_file(url0, target_path)
-        else:
-            f = open(target_path, 'wb')
-            f.write(data)
-            f.close()
+        f = open(target_path, 'wb')
+        f.write(data)
+        f.close()
             
     def _download_package(self, src, dstdir):
         '''下载安装包

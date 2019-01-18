@@ -22,6 +22,8 @@ import time
 import traceback
 
 from qt4i.icontrols import Element
+from qt4i.icontrols import Window
+from qt4i.qpath import QPath
 from qt4w.util import JavaScriptError
 from qt4w.webdriver.webkitwebdriver import WebkitWebDriver
 
@@ -51,6 +53,7 @@ class IOSWebView(Element):
         self.is_simulator = self._device.simulator
         self.title = title
         self.url_key = url
+        self._top_offset = 0
         self.page_id = self._init_page_id()
         print("webview init page id:%s" % self.page_id)
             
@@ -63,7 +66,15 @@ class IOSWebView(Element):
                 err = traceback.format_exc()
                 time.sleep(1)
         raise RuntimeError('Failed to init page id reason: %s'%err)
-        
+
+    @property
+    def top_offset(self):
+        return self._top_offset
+
+    @top_offset.setter
+    def top_offset(self, offset):
+        self._top_offset = offset
+
     @property
     def webdriver_class(self):
         '''WebView对应的WebDriver类
@@ -92,16 +103,15 @@ class IOSWebView(Element):
         if x < 0 or x > v_rect[2] or \
            y < 0 or y > v_rect[3]:
             raise RuntimeError('[x:%s, y:%s]不在可见区域' % (x, y))
-        x_abs = x + v_rect[0]
-        y_abs = y + v_rect[1]
+        x_abs = x + v_rect[0] + self.rect[0]
+        y_abs = y + v_rect[1] + self.rect[1] + self._top_offset
         if rel:
             dev_rect = self._device.rect
             x_rel = float('%.2f' % (x_abs / float(dev_rect.width)))
             y_rel = float('%.2f' % (y_abs / float(dev_rect.height)))
             return (x_rel, y_rel)
         else:
-            return (x_abs, y_abs)   
-         
+            return (x_abs, y_abs)
     
     def click(self, x_offset, y_offset):
         coordinate = self._coordinate_conversion(x_offset, y_offset)
@@ -158,3 +168,24 @@ class IOSWebView(Element):
 
     def send_keys(self, keys):
         self._driver.device.send_keys(keys)
+
+
+class QT4iBrowserWin(Window):
+    '''
+    浏览器窗口基类
+    '''
+    def __init__(self, app):
+        self._app = app
+        Window.__init__(self, self._app)
+        self.scroll_win = Element(self._app, 'WebView')
+        locators = {
+            'webview': {'type': IOSWebView, 'root': self.scroll_win, 'locator': QPath("/classname='WebView'")},
+        }
+        self.updateLocator(locators)
+
+    @property
+    def webview(self):
+        '''
+        WebView对象
+        '''
+        return self.Controls['webview']

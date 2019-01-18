@@ -13,10 +13,20 @@
 安装QT4i
 ======
 
+qt4i的正常使用依赖《|fbsimctl|_》工具，首先需要安装fbsimctl:
+
 .. code-block:: shell
 
-	$ pip install qt4i 
- 
+      $ brew tap facebook/fb
+
+      $ brew install fbsimctl --HEAD
+
+然后安装qt4i:
+
+.. code-block:: shell
+
+	$ pip install qt4i
+
 .. _intro_xctestagent:
     
 ===================

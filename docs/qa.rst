@@ -78,7 +78,11 @@ Mac解析hostname异常
   
 * 方法一：
   
-* 在终端运行命令：sudo scutil --set HostName newName.local（其中newName.local替换成系统偏好设置->共享查到的如上图所示内容）
+* 在终端运行如下命令:（其中newName.local替换成系统偏好设置->共享查到的如上图所示内容）
+
+.. code-block:: shell
+
+	$ sudo scutil --set HostName newName.local
 
 * （方法一执行完错误仍在使用方法二）
   

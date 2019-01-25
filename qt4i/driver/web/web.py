@@ -43,13 +43,16 @@ class WebInspector(RPCEndpoint):
         ub = self.WKRDP_SEPARATOR.join([self.udid,bundle_id])
         self.logger.info('current app sessions:%s' % WebInspector.WKRDP)
         if ub not in WebInspector.WKRDP:
+            proto = None
             if not DT().is_simulator(self.udid):
-                WebInspector.WKRDP[ub] = RealDeviceProtocol(bundle_id, self.udid)
+                proto = RealDeviceProtocol(bundle_id, self.udid)
             else:
-                WebInspector.WKRDP[ub] = SimulatorProtocol(bundle_id, self.udid)
+                proto = SimulatorProtocol(bundle_id, self.udid)
+            proto.start()
             self.logger.info('[%s] wkrdp session starting' % ub)
-            WebInspector.WKRDP[ub].start()
+            WebInspector.WKRDP[ub] = proto
         return WebInspector.WKRDP[ub].request_current_page_id(title, url)
+
     
     @rpc_method
     def eval_script(self, bundle_id, frame_id, page_id, script):

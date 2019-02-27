@@ -22,7 +22,9 @@ install:
   - pip install mock --user
 script:
   - python tests/__init__.py
-before_deploy: echo $TRAVIS_TAG | sed 's/^.//' > version.txt
+before_deploy: 
+  - echo $TRAVIS_TAG | sed 's/^.//' > version.txt
+  - pip install twine --user
 deploy:
   skip_existing: true
   skip_cleanup: true

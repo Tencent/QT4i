@@ -22,11 +22,8 @@ install:
   - pip install mock --user
 script:
   - python tests/__init__.py
-before_deploy: 
-  - echo $TRAVIS_TAG | sed 's/^.//' > version.txt
-  - pip install twine --user
+before_deploy: echo $TRAVIS_TAG | sed 's/^.//' > version.txt
 deploy:
-  skip_existing: true
   skip_cleanup: true
   provider: pypi
   user: qta

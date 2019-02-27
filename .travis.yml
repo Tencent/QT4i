@@ -22,9 +22,13 @@ install:
   - pip install mock --user
 script:
   - python tests/__init__.py
-before_deploy: echo $TRAVIS_TAG | sed 's/^.//' > version.txt
+before_deploy: 
+  - echo $TRAVIS_TAG | sed 's/^.//' > version.txt
+  - echo $PATH
+  - export PATH=/Users/travis/Library/Python/2.7/bin:$PATH
 deploy:
   skip_cleanup: true
+  skip_existing: true
   provider: pypi
   user: qta
   password:

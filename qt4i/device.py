@@ -439,7 +439,10 @@ class Device(object):
         self._device_udid = self._device_resource.udid
         self._device_name = self._device_resource.name
         self._device_ios = self._device_resource.version
-        self._device_simulator = self._device_resource.is_simulator == str(True)
+        if isinstance(self._device_resource.is_simulator, bool):
+            self._device_simulator = self._device_resource.is_simulator
+        else:
+            self._device_simulator = self._device_resource.is_simulator == str(True)
         
         if self._device_simulator:
             self._host.start_simulator(self._device_udid)

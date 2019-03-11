@@ -48,7 +48,7 @@ class DeviceAcquirementTest(unittest.TestCase):
             'name':'iPhoneX',
             'host':'127.0.0.1',
             'port':12306,
-            'is_simulator':True,
+            'is_simulator': False,
             'version':'12.0',
         },]
         IOSDeviceResourceHandler.iter_resource = mock.MagicMock(return_value=iter(devices))
@@ -71,7 +71,7 @@ class DeviceActionTest(unittest.TestCase):
             'name':'iPhoneX',
             'host':'127.0.0.1',
             'port':12306,
-            'is_simulator':True,
+            'is_simulator': False,
             'version':'12.0',
         },]
         IOSDeviceResourceHandler.iter_resource = mock.MagicMock(return_value=iter(devices))
@@ -372,7 +372,7 @@ class KeyBoardTest(unittest.TestCase):
             'name': 'iPhoneX',
             'host': '127.0.0.1',
             'port': 12306,
-            'is_simulator': True,
+            'is_simulator': False,
             'version': '12.0',
         }, ]
         IOSDeviceResourceHandler.iter_resource = mock.MagicMock(return_value=iter(devices))

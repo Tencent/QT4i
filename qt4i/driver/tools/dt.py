@@ -1006,7 +1006,7 @@ class DT(with_metaclass(Singleton, object)):
                 if 'Apple TV' in name:
                     continue
                 arch = dev['arch']
-                if arch == 'arm64' :
+                if arch.startswith('arm64'):
                     dev[u'simulator'] = False
                 else :
                     dev[u'simulator'] = True 

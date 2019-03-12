@@ -257,7 +257,7 @@ class Device(RPCEndpoint):
         ios_version = DT().get_device_by_udid(self.udid)['ios']
         if DT.compare_version(ios_version, '12.0') >= 0:
             app_list = []
-            for app in DT().list_apps_with_fbsimctl(self.udid, 'all'):
+            for app in DT().list_apps(self.udid, 'all'):
                 app_list.extend(app.keys())
             if bundle_id not in app_list:
                 raise Exception("Failed to launch application, %s not exist" % bundle_id)

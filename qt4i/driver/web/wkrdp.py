@@ -291,10 +291,10 @@ class WebKitRemoteDebugProtocol(object):
                                   'WIRPageIdentifierKey': int(page_id)
                                   }, 
                    '__selector': EnumSelector.SEND_FORWARD_SOCKET_SETUP}
-        self.send_webkit_message(request)   
-        
+        self.send_webkit_message(request)
+
     def _enable_inspector(self):
-        '''打开web inspector的开关(非必须)
+        '''打开web事件的通知开关(非必须)
         '''  
         data = {"method":"Inspector.enable"}
         self.send_webkit_socket_data(data, self.page_id)
@@ -376,7 +376,7 @@ class WebKitRemoteDebugProtocol(object):
                 '__selector': EnumSelector.SEND_FORWARD_SOCKET_DATA}
         self.send_webkit_message(data)
     
-    def recv_webkit_socket_data(self):
+    def recv_webkit_socket_data(self, ignore_id=False):
         pages_changed = False
         while True:
             try:
@@ -397,7 +397,7 @@ class WebKitRemoteDebugProtocol(object):
                 continue
             data = response['__argument']['WIRMessageDataKey']
             data = json.loads(data.decode('UTF-8'), encoding='UTF-8')
-            if 'id' in data and (data['id'] == self.seq):
+            if ('id' in data and (data['id'] == self.seq)) or ignore_id:
                 return data
 
 

@@ -2,12 +2,12 @@
 #
 # Tencent is pleased to support the open source community by making QTA available.
 # Copyright (C) 2016THL A29 Limited, a Tencent company. All rights reserved.
-# Licensed under the BSD 3-Clause License (the "License"); you may not use this 
+# Licensed under the BSD 3-Clause License (the "License"); you may not use this
 # file except in compliance with the License. You may obtain a copy of the License at
-# 
+#
 # https://opensource.org/licenses/BSD-3-Clause
-# 
-# Unless required by applicable law or agreed to in writing, software distributed 
+#
+# Unless required by applicable law or agreed to in writing, software distributed
 # under the License is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS
 # OF ANY KIND, either express or implied. See the License for the specific language
 # governing permissions and limitations under the License.
@@ -30,7 +30,7 @@ from six.moves.http_client import HTTPResponse
 from six import StringIO
 from six import PY2
 
-if PY2: 
+if PY2:
     from urllib import splittype
     from urllib import splithost
 else:
@@ -62,13 +62,13 @@ class _RPCMethod(object):
         self.method = method
         self.instance = instance
         self.owner = owner
-         
+
     def __call__(self, *args, **kwargs ):
         if self.instance == None or self.owner == None:
             return self.method(*args, **kwargs)
         else:
             return self.method.__get__(self.instance, self.owner)(*args, **kwargs)
-    
+
     def __get__(self, instance, owner):
         return _RPCMethod(self.method, instance, owner)
 
@@ -79,7 +79,7 @@ class RPCEndpoint(object):
     """RPC end point, subclass to define a RPC end point
     """
     rpc_name_prefix = ""
-    
+
     def _dispatch(self, method, params):
         if not method.startswith(self.rpc_name_prefix):
             raise Exception('method "%s" is not supported by endpoint "%s"' % (method, type(self).__name__))
@@ -91,7 +91,7 @@ class RPCEndpoint(object):
             if not isinstance(m, _RPCMethod):
                 raise Exception('method "%s" is not exposed by endpoint "%s"' % (method, type(self).__name__))
             return m(*params)
-        
+
     def create_json_command(self, method, *params):
         '''serialize function to JSON Object
         '''
@@ -106,7 +106,7 @@ class FakeSocket():
 
 
 class RPCClientProxy(object):
-    '''RPC Client, 
+    '''RPC Client,
     copy  ServerProxy 的源码， 在__request 方法中进行解码
     主要实现RPC客户端返回Unicode转换为UTF-8
     '''
@@ -221,10 +221,10 @@ class RPCClientProxy(object):
         elif attr == "transport":
             return self.__transport
         raise AttributeError("Attribute %r not found" % (attr,))
-    
+
     def encode_dict(self, content, encoding="UTF-8"):
         '''将字典编码为指定形式
-        
+
         :param content: 要编码内容
         :type content: dict
         :param encoding:编码类型
@@ -238,11 +238,11 @@ class RPCClientProxy(object):
                 content[key] = content[key].encode(encoding)
             elif isinstance(content[key], list):
                 content[key] = self.encode_list(content[key], encoding)
-        return content   
-    
+        return content
+
     def encode_list(self, content, encoding="UTF-8"):
         '''将列表编码为指定形式
-        
+
         :param content: 要编码内容
         :type content: list
         :param encoding:编码类型
@@ -278,21 +278,21 @@ class Fault(object):
 
     def error(self):
         return {"code": self.faultCode, "message": self.faultString}
-    
+
     def response(self):
         return json.dumps({"jsonrpc": "2.0", "error":self.error(), "id":self.rpcid})
 
     def __repr__(self):
         return '<Fault %s: %s>' % (self.faultCode, self.faultString)
 
- 
+
 class TransportMixIn(object):
     '''XMLRPC Transport extended API
     '''
     user_agent = "jsonrpclib/0.1"
     _connection = (None, None)
     _extra_headers = []
-        
+
     def send_content(self, connection, request_body):
         connection.putheader("Content-Type", "application/json-rpc")
         connection.putheader("Content-Length", str(len(request_body)))
@@ -302,14 +302,14 @@ class TransportMixIn(object):
             if not PY2 and isinstance(request_body, str):
                 request_body = request_body.encode('utf-8')
             connection.send(request_body)
-            
+
     def getparser(self):
         target = JSONTarget()
-        return JSONParser(target), target    
-    
+        return JSONParser(target), target
+
 
 class JSONParser(object):
-    
+
     def __init__(self, target):
         self.target = target
 
@@ -321,7 +321,7 @@ class JSONParser(object):
 
 
 class JSONTarget(object):
-    
+
     def __init__(self):
         self.data = []
 
@@ -336,16 +336,16 @@ class JSONTarget(object):
 
 
 class Transport(TransportMixIn, xmlrpc_client.Transport):
-    
+
     def __init__(self, use_datetime):
         TransportMixIn.__init__(self)
         xmlrpc_client.Transport.__init__(self, use_datetime)
 
 
 class SafeTransport(TransportMixIn, xmlrpc_client.SafeTransport):
-    
+
     def __init__(self, use_datetime, context):
-        TransportMixIn.__init__(self)    
+        TransportMixIn.__init__(self)
         xmlrpc_client.SafeTransport.__init__(self, use_datetime, context)
 
 
@@ -354,7 +354,7 @@ class SimpleJSONRPCRequestHandler(SimpleXMLRPCRequestHandler):
     '''
     def is_rpc_path_valid(self):
         return True
-    
+
     def do_POST(self):
         '''处理HTTP的POST请求
         '''
@@ -389,48 +389,49 @@ class SimpleJSONRPCRequestHandler(SimpleXMLRPCRequestHandler):
                     q = self.accept_encodings().get("gzip", 0)
                     if q:
                         try:
+                            if six.PY3 and isinstance(response, six.string_types):
+                                response = response.encode('utf-8')
                             response = xmlrpc_client.gzip_encode(response)
                             self.send_header("Content-Encoding", "gzip")
                         except NotImplementedError:
                             pass
         self.send_header("Content-length", str(len(response)))
         self.end_headers()
-        if PY2:
-            self.wfile.write(response)
-        else:
-            self.wfile.write(response.encode('utf-8'))
+        if six.PY3 and isinstance(response, six.string_types):
+            response = response.encode('utf-8')
+        self.wfile.write(response)
 
 
 class SimpleJSONRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
     """RPC Server
     """
-    
+
     LOG_FILTERED_METHODS = [
-                            'push_file_data', 
+                            'push_file_data',
                             'pull_file_data',
                             'device.get_log',
                             'device.get_crash_log',
                             'device.get_driver_log',
-                            'device.get_element_tree', 
+                            'device.get_element_tree',
                             'device.get_element_tree_and_capture_screen',
-                            'device.capture_screen', 
+                            'device.capture_screen',
                             'element.get_element_tree',
                             ]
 
     def __init__(self, urls, addr):
         """Constructor
-        
+
         :param urls: list of URL pattern and RPC end point class
         :param addr: listening address
         :type urls: list
         :type addr: tuple
         """
-        SimpleXMLRPCServer.__init__(self, addr=addr, 
+        SimpleXMLRPCServer.__init__(self, addr=addr,
                                                        requestHandler=SimpleJSONRPCRequestHandler,
-                                                       allow_none=True, 
+                                                       allow_none=True,
                                                        encoding='UTF-8',
                                                        logRequests=False)
-        
+
         self._dispatcher_patterns = []
         for url_pattern, method_pattern, endpoint_cls in urls:
             if method_pattern:
@@ -440,13 +441,13 @@ class SimpleJSONRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
             self._dispatcher_patterns.append((re.compile(url_pattern),
                                               method_c_pattern,
                                               endpoint_cls))
-    
+
     def _marshaled_dispatch(self, data, dispatch_method=None, path=None):
         origin_path = path
         path = path[1:] #remove /
         if not path.endswith('/'):
             path += '/'
-        
+
         try:
             request = json.loads(data)
         except ValueError:
@@ -461,7 +462,7 @@ class SimpleJSONRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
         params_types = (list, dict, tuple)
         if not method or not isinstance(method, six.string_types) or not isinstance(params, params_types):
             return Fault(-32600, 'Invalid request method or parameters').response()
-          
+
         tried_enpoint_clss = []
         for url_pattern, method_pattern, endpoint_cls in self._dispatcher_patterns:
             m = url_pattern.match(path)
@@ -471,7 +472,7 @@ class SimpleJSONRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
                     log = logger.get_logger("driverserver_%s" % log_suffix)
                 except:
                     log = logger.get_logger()
-                
+
                 tried_enpoint_clss.append(endpoint_cls)
                 if (method_pattern is None) or method_pattern.match(method):
                     endpoint_params = m.groupdict()
@@ -481,25 +482,27 @@ class SimpleJSONRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
                         fault = Fault()
                         log.exception(fault.error())
                         return fault.response()
-                    else:    
+                    else:
                         break
         else:
             if not tried_enpoint_clss:
                 return Fault(-32601, "invalid URL: \"%s\"" % origin_path).response()
             else:
-                return Fault(-32601, "invalid method: \"%s\", no matched end point, end point: %s tried" % 
+                return Fault(-32601, "invalid method: \"%s\", no matched end point, end point: %s tried" %
                     (method, ", ".join([ '"%s"'%it.__name__ for it in tried_enpoint_clss]))).response()
-          
+
         try:
             log.debug('--- --- --- --- --- ---')
             log.debug('%s <<< %s' % (method, params))
-            
+
             response = endpoint._dispatch(method, params)
             if method in self.LOG_FILTERED_METHODS:
-                log.debug('%s >>> done' % method) 
+                log.debug('%s >>> done' % method)
             else:
-                log.debug('%s >>> %s' % (method, response))            
+                log.debug('%s >>> %s' % (method, response))
             # wrap response in a singleton tuple
+            if six.PY3 and isinstance(response, six.binary_type):
+                response = response.decode('utf-8')
             response = (response,)
             response = json.dumps({"jsonrpc": "2.0", "result": response, "id": rpcid})
         except:

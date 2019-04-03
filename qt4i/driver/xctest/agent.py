@@ -291,7 +291,7 @@ class XCUITestAgent(object):
 
     def _get_xcodebuild_agent_cmd_for_simulator(self, xcode_version):
         template_root = pkg_resources.resource_filename("qt4i", "driver/xctest/bin") #@UndefinedVariable
-        xctestfile_template = os.path.join(template_root, "iphonesimulator-%s.xctestrun" % xcode_version)
+        xctestfile_template = os.path.join(template_root, "iphonesimulator-%s.xctestrun" % xcode_version.split('.')[0])
         agent_dir = self._build_agent_for_simulator(xcode_version)
         xctestfile = os.path.join(agent_dir, "%s.xctestrun" % self.udid)
         if not os.path.isfile(xctestfile):
@@ -341,8 +341,8 @@ class XCUITestAgent(object):
         '''
         if self.type == EnumDevice.Simulator:
             dt.DT().reboot(self.udid)
-            xcode_version = dt.DT.get_xcode_version().split(".")[0]
-            if int(xcode_version) >= 9:
+            xcode_version = dt.DT.get_xcode_version()
+            if dt.DT.compare_xcode_version("9.0") >= 0:
                 self._agent_cmd = self._get_xcodebuild_agent_cmd_for_simulator(xcode_version)
             else:
                 self._agent_cmd = self._get_fbsimctl_agent_cmd_for_simulator(xcode_version)

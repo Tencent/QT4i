@@ -24,7 +24,10 @@ import traceback
 from qt4i.icontrols import Element
 from qt4i.icontrols import Window
 from qt4i.qpath import QPath
+from qt4w.util import Frame
+from qt4w.util import FrameSelector
 from qt4w.util import JavaScriptError
+from qt4w.util import ControlNotFoundError
 from qt4w.webdriver.webkitwebdriver import WebkitWebDriver
 
 
@@ -55,6 +58,7 @@ class IOSWebView(Element):
         self.url_key = url
         self._top_offset = 0
         self.page_id = self._init_page_id()
+        self._context_ids = {}
         print("webview init page id:%s" % self.page_id)
             
     def _init_page_id(self):
@@ -103,8 +107,8 @@ class IOSWebView(Element):
         if x < 0 or x > v_rect[2] or \
            y < 0 or y > v_rect[3]:
             raise RuntimeError('[x:%s, y:%s]不在可见区域' % (x, y))
-        x_abs = x + v_rect[0] + self.rect[0]
-        y_abs = y + v_rect[1] + self.rect[1] + self._top_offset
+        x_abs = x + v_rect[0] 
+        y_abs = y + v_rect[1] + self._top_offset
         if rel:
             dev_rect = self._device.rect
             x_rel = float('%.2f' % (x_abs / float(dev_rect.width)))
@@ -129,18 +133,52 @@ class IOSWebView(Element):
         coordinate1 = self._coordinate_conversion(x1, y1)
         coordinate2 = self._coordinate_conversion(x2, y2)
         self._device.drag(coordinate1[0], coordinate1[1], coordinate2[0], coordinate2[1])
-          
+    
+    def _convert_frame_tree(self, frame_tree, parent=None):
+        frame = Frame(frame_tree['frame']['id'], frame_tree['frame'].get('name', None), frame_tree['frame']['url'])
+        if parent:
+            parent.add_child(frame)
+        if 'childFrames' in frame_tree:
+            for child in frame_tree['childFrames']:
+                self._convert_frame_tree(child, frame)
+        return frame
+    
+    def _get_frame_id_by_xpath(self, frame_xpaths):
+        start_time = time.time()
+        while time.time() - start_time < 5:
+            frame_tree = self._driver.web.get_frame_tree(self.bundle_id, self.page_id)
+            frame = self._convert_frame_tree(frame_tree)
+            frame_selector = FrameSelector(self.webdriver_class(self), frame)
+            try:
+                frame = frame_selector.get_frame_by_xpath(frame_xpaths)
+            except ControlNotFoundError:
+                time.sleep(0.5)
+            else:
+                return frame.id
+        else:
+            raise ControlNotFoundError('Find frame %s timeout' % ''.join(frame_xpaths))
+        
+    def _get_context_id(self, frame_id):
+        if frame_id not in self._context_ids:
+            context_id = self._driver.web.get_context_id(self.bundle_id, self.page_id, frame_id)
+            self._context_ids[frame_id] = context_id
+        return self._context_ids[frame_id]
+        
     def eval_script(self, frame_xpaths, script):
         '''javascript脚本注入接口
         
-        :param frame_xpaths: 保留，暂不使用
-        :type frame_xpaths: str|None
+        :param frame_xpaths: frame的XPath的列表，嵌套frame的情况XPath依次放入list
+        :type frame_xpaths: list
         :param script: javascript脚本
         :type script: str
         '''
         result = None
+        context_id = None
+        if frame_xpaths:
+            frame_id = self._get_frame_id_by_xpath(frame_xpaths)
+            context_id = self._get_context_id(frame_id)
         try:
-            result = self._driver.web.eval_script(self.bundle_id, frame_xpaths, self.page_id, script)
+            result = self._driver.web.eval_script(self.bundle_id, context_id, self.page_id, script)
         except Exception:
             err = traceback.format_exc()
             if 'WIPageUpdateError' in err:

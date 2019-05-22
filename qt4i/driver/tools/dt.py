@@ -925,7 +925,7 @@ class DT(with_metaclass(Singleton, object)):
         tmp_dict = {}
         if self.is_simulator(udid):
             sandbox_root = self._get_simulator_app_data_path(udid, bundle_id)
-            file_path = sandbox_root if file_path == '/' else file_path
+            file_path = sandbox_root if file_path == '/' else os.path.join(sandbox_root, file_path)
             for l in os.listdir(file_path):
                 tmp_dict['path'] = os.path.join(file_path, l)
                 tmp_dict['is_dir'] = os.path.isdir(tmp_dict['path'])

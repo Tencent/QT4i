@@ -4,3 +4,4 @@ pymobiledevice-qta
 biplist
 websocket-client
 future
+qt4w

@@ -80,17 +80,14 @@ class WebKitRemoteDebugProtocol(object):
     iOS WebKit 远程调试协议
     '''
 
-    MAX_PLIST_LEN = 8192 - 512  # 7.5k
+    MAX_PLIST_LEN = 7680  # 7.5k
     FINAL_MSG = "WIRFinalMessageKey"
     PARTIAL_MSG = "WIRPartialMessageKey"
 
-    def __init__(self, bundle_id, udid=None):
+    def __init__(self, bundle_id, udid):
         self.app_bundle_id = bundle_id
         self.udid = udid
-        if self.udid:
-            self.logger = get_logger("driverserver_%s" % self.udid)
-        else:
-            self.logger = get_logger()
+        self.logger = get_logger("driverserver_%s" % self.udid)
         self.seq = 0  # webkit调试命令的序号
         self.conn_id = str(uuid.uuid1()).upper()
         self.sender_key = str(uuid.uuid4()).upper()
@@ -100,21 +97,35 @@ class WebKitRemoteDebugProtocol(object):
         self.app_id = None
         self.page_id = None
         self.host_app_ids = []
+        self.target_id = None
+        self._ios_version = DT().get_device_by_udid(self.udid)['ios']
+        self._is_target_domain = DT.compare_version(self._ios_version, '12.2') >= 0
+        self.is_target_wrapped = False
     
     @property
+    def is_target_domain(self):
+        return self._is_target_domain
+
+    @property
     def is_complete_supported(self):
-        raise NotImplementedError    
-        
+        raise NotImplementedError  
+    
     def start(self):
         '''启动调试服务
         '''
-        raise NotImplementedError
+        self.connect_inspector()
     
     def stop(self):
         '''停止调试服务
         '''
         if hasattr(self, '_sock'):
             self._sock.close()
+            
+    def on_close(self):
+        self.stop()
+            
+    def __del__(self):
+        self.stop()
         
     def send(self, data):
         total = 0
@@ -304,7 +315,7 @@ class WebKitRemoteDebugProtocol(object):
         self.send_webkit_socket_data(data, self.page_id)
         self.logger.info(self.recv_webkit_socket_data())  
         
-    def init_inspector(self):
+    def connect_inspector(self):
         self._init_app_id()
          
     def send_webkit_message(self, message): 
@@ -357,9 +368,27 @@ class WebKitRemoteDebugProtocol(object):
             self.msgbuf.append(data)
             return self.recv_webkit_response()
     
+    def _on_target_created(self, message):
+        self.target_id = message['targetInfo']['targetId']
+    
     def send_webkit_socket_data(self, data, page_id):
         if page_id != self.page_id:
             self._setup_webkit_socket(page_id)
+            if self.is_target_domain:
+                resp = self.recv_webkit_socket_data(True)
+                if resp['method'] == 'Target.targetCreated':
+                    self._on_target_created(resp['params'])
+        
+        if self.is_target_domain:
+            self.is_target_wrapped = True
+            self.seq += 1
+            data["id"] = self.seq
+            data = {
+                "method":"Target.sendMessageToTarget",
+                "params":{
+                    "targetId":self.target_id,
+                    "message":json.dumps(data)}
+            }       
         self.seq += 1
         data["id"] = self.seq
         data = json.dumps(data)
@@ -375,6 +404,14 @@ class WebKitRemoteDebugProtocol(object):
                                }, 
                 '__selector': EnumSelector.SEND_FORWARD_SOCKET_DATA}
         self.send_webkit_message(data)
+        
+    def _on_dispatch_message_from_target(self, params):
+        target_id = params['targetId']
+        if self.target_id == target_id:
+            self.is_target_wrapped = False
+            return json.loads(params['message'].decode('UTF-8'), encoding='UTF-8')
+        else:
+            raise Exception("Target id is not valid.")
     
     def recv_webkit_socket_data(self, ignore_id=False):
         pages_changed = False
@@ -398,7 +435,10 @@ class WebKitRemoteDebugProtocol(object):
             data = response['__argument']['WIRMessageDataKey']
             data = json.loads(data.decode('UTF-8'), encoding='UTF-8')
             if ('id' in data and (data['id'] == self.seq)) or ignore_id:
-                return data
+                if not (self.is_target_domain and self.is_target_wrapped == True):
+                    return data
+            elif 'method' in data and data['method'] == 'Target.dispatchMessageFromTarget':
+                return self._on_dispatch_message_from_target(data['params'])
 
 
 class RealDeviceProtocol(WebKitRemoteDebugProtocol): 
@@ -407,15 +447,9 @@ class RealDeviceProtocol(WebKitRemoteDebugProtocol):
     '''
     
     
-    def __init__(self, bundle_id='com.apple.WebKit.WebContent', udid=None):
+    def __init__(self, bundle_id, udid):
         super(RealDeviceProtocol, self).__init__(bundle_id, udid)
         self._partial_supported = True
-        
-    @property
-    def is_complete_supported(self):
-        return not self._partial_supported
-        
-    def start(self):
         lockdown = LockdownClient(self.udid)
         ios_version = lockdown.allValues['ProductVersion']
         if DT.compare_version(ios_version, '11.0') >= 0: # iOS11真机以上不支持数据分割
@@ -424,10 +458,10 @@ class RealDeviceProtocol(WebKitRemoteDebugProtocol):
         self._sock = self.web_inspector.s
         self._sock.setblocking(False)
         self._sock.settimeout(5)
-        self.init_inspector()
         
-    def __del__(self):
-        self.stop()
+    @property
+    def is_complete_supported(self):
+        return not self._partial_supported
 
 
 class SimulatorProtocol(WebKitRemoteDebugProtocol):
@@ -435,7 +469,7 @@ class SimulatorProtocol(WebKitRemoteDebugProtocol):
     iOS模拟器的远程调试协议实现(本地socket通信)
     '''
     
-    def __init__(self, bundle_id='com.apple.WebKit.WebContent', udid=None):
+    def __init__(self, bundle_id, udid):
         super(SimulatorProtocol, self).__init__(bundle_id, udid)
         if DT.compare_xcode_version('9.3') >= 0:
             self._sock = self._get_webinspector_socket_above_xcode93(udid)
@@ -469,8 +503,3 @@ class SimulatorProtocol(WebKitRemoteDebugProtocol):
     def is_complete_supported(self):
         return True
         
-    def start(self):
-        self.init_inspector()
-        
-    def __del__(self):
-        self.stop()

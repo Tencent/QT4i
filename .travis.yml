@@ -2,21 +2,24 @@ language: python
 matrix:
   include:
   - os: osx
+    osx_image: xcode11.3
     python: '2.7'
     language: generic
     env:
       - BUILD_SDIST=true
   - os: osx
+    osx_image: xcode11.3
     python: '3.5'
     language: generic
   - os: osx
+    osx_image: xcode11.3
     python: '3.6'
     language: generic
   - os: osx
+    osx_image: xcode11.3
     python: '3.7'
     language: generic  
 install:
-  - sudo xcode-select --install
   - brew install openssl && brew install swig
   - LDFLAGS="-L$(brew --prefix openssl)/lib" CFLAGS="-I$(brew --prefix openssl)/include" SWIG_FEATURES="-I$(brew --prefix openssl)/include" pip install m2crypto==0.32.0 --user
   - pip install -r requirements.txt --user

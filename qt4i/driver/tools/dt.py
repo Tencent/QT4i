@@ -31,6 +31,7 @@ from six.moves.http_client import HTTPConnection
 from six import PY3
 from six import with_metaclass
 import six
+import threading
 
 from qt4i.driver.tools import mobiledevice
 from qt4i.driver.tools.mobiledevice import InstallationProxy
@@ -39,22 +40,24 @@ from qt4i.driver.util import zip_decompress
 from qt4i.driver.tools.mobiledevice import SandboxClient
 from testbase.util import Singleton
 from testbase.util import Timeout
+from qt4i.driver.util._process import Process
 
 
 # 挂载根路径
 MOUNT_ROOT_PATH = os.path.expanduser('~')
 TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+QT4I_CACHE_ROOT = os.path.join(os.path.expanduser('~'), "qt4icache")
+if not os.path.exists(QT4I_CACHE_ROOT):
+    os.makedirs(QT4I_CACHE_ROOT)
 
 class Flock(object):
-    
-    def __init__(self, filepath='/cores/lock'):
+
+    def __init__(self, filepath=os.path.join(QT4I_CACHE_ROOT, 'lock')):
         self._filepath = filepath
         self._fd = open(self._filepath, 'w')
 
     def __enter__(self):
         fcntl.flock(self._fd, fcntl.LOCK_EX)
-        with open('/cores/pid','w+') as fd:
-            fd.write("%s\n" % str(os.getpid()))
         return self
 
     def __exit__(self, *args):
@@ -92,8 +95,9 @@ class DT(with_metaclass(Singleton, object)):
         self.udid = None
         self.bundle_id = None
         self.sc = None
-        self._init_fbsimctl()
-    
+        if self.compare_xcode_version("11.0") < 0:
+            self._init_fbsimctl()
+
     def _init_fbsimctl(self):
         try:
             fbsimctl_zip = pkg_resources.resource_filename("qt4i", "driver/tools/fbsimctl/fbsimctl.zip") #@UndefinedVariable
@@ -270,6 +274,8 @@ class DT(with_metaclass(Singleton, object)):
         
         :returns: list[dict]
         '''
+        if self.compare_xcode_version("11.0")>=0:
+            return self._get_devices_by_ins()
         return self._get_device_by_fbsimctl()
     
     def get_device_by_name(self, _name):
@@ -388,9 +394,9 @@ class DT(with_metaclass(Singleton, object)):
         if self.compare_xcode_version("7.0") < 0:
             simulator = "iOS Simulator"
         if udid:
-            cmd = [self.fbsimctl, udid, 'boot']
-            if self.compare_xcode_version("9.0") >= 0:
-                cmd = ['xcrun', 'simctl', 'boot', udid]
+            cmd = ['xcrun', 'simctl', 'boot', udid]
+            if self.compare_xcode_version("9.0") < 0:
+                cmd = [self.fbsimctl, udid, 'boot']
         else:
             cmd = "open -a \"%s\"" % simulator
         
@@ -444,11 +450,22 @@ class DT(with_metaclass(Singleton, object)):
         '''
         http_prefix = u'http://'
         https_prefix = u'https://'
-        
+
+        if isinstance(src, six.text_type):
+            src = src.encode('utf-8')
+        if PY3:
+            import urllib.parse as parse
+        else:
+            import urllib as parse
+        src = parse.quote(src, ":?=/")
+
         if src.startswith(http_prefix) or src.startswith(https_prefix):
             '''源路径是http或https服务器路径
             '''
-            filename = src[src.rfind('/')+1:]
+            if src.rfind('?') == -1:
+                filename = src[src.rfind('/') + 1:]
+            else:
+                filename = src[src.rfind('/') + 1:src.rfind('?')]
             filepath = os.path.join(dstdir, filename)
             self._download_http_file(src, filepath)
         
@@ -633,7 +650,9 @@ class DT(with_metaclass(Singleton, object)):
         return ret[0] 
     
     def _shutdown_simulator(self, udid):
-        cmd = [self.fbsimctl, udid, 'shutdown']
+        cmd = ["xcrun", "simctl", "shutdown", udid]
+        if self.compare_xcode_version("11.0") < 0:
+            cmd = [self.fbsimctl, udid, 'shutdown']
         return True if subprocess.call(cmd, close_fds=True) == 0 else False
     
     def reboot(self, udid):
@@ -827,8 +846,32 @@ class DT(with_metaclass(Singleton, object)):
             return apps
         except subprocess.CalledProcessError as e:
             raise Exception('list_apps for simulator error:%s' % e.output)
-    
-    def list_apps(self, udid, app_type): 
+
+    def list_apps_with_xcrun(self, udid, app_type):
+        try:
+            apps_info = []
+            cmd = "xcrun simctl listapps %s" % udid
+            result = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+            if PY3:
+                result = result.decode()
+            print(result)
+            app_types = re.findall(r'ApplicationType\s=\s(.*?);\n', result)
+            bundle_ids = re.findall(r'CFBundleIdentifier\s=\s"(.*?)";\n', result)
+            bundle_names = re.findall(r'CFBundleName\s=\s(.*?);\n', result)
+            list = []
+            for i in range(len(app_types)):
+                dic = {}
+                if app_type.lower() == 'all':
+                    dic[str(bundle_ids[i].strip())] = str(bundle_names[i])
+                    list.append(dic)
+                elif app_types[i].lower() == app_type.lower():
+                    dic[str(bundle_ids[i].strip())] = str(bundle_names[i])
+                    list.append(dic)
+            return list
+        except subprocess.CalledProcessError as e:
+            raise Exception('list_apps for simulator error:%s' % e.output)
+
+    def list_apps(self, udid, app_type):
         '''获取设备上的app列表
         
         :param udid: 设备的udid
@@ -838,6 +881,9 @@ class DT(with_metaclass(Singleton, object)):
         :returns: list
         '''
         if self.is_simulator(udid):
+            if self.compare_xcode_version("11.0") >= 0:
+                self.start_simulator(udid)
+                return self.list_apps_with_xcrun(udid, app_type)
             return self.list_apps_with_fbsimctl(udid, app_type)
         else:
             return InstallationProxy(udid).list_apps(app_type)
@@ -1016,3 +1062,47 @@ class DT(with_metaclass(Singleton, object)):
         except subprocess.CalledProcessError:
             pass
         return devices
+
+    def _get_devices_by_ins(self):
+        '''查询当前Mac机上的所有可用设备(含真机与模拟器，并产生缓存)
+
+		:returns: list[dict]
+		'''
+        devices = []
+        self._dev_info = ''
+        with Flock(os.path.join(QT4I_CACHE_ROOT,'listdevices_lock')):  # 使用文件锁
+            for i in range(3):  # 尝试3次
+                thread = threading.Thread(target=self._list_devices)
+                thread.daemon = True
+                thread.start()
+                thread.join(10)
+
+                if thread.is_alive():
+                    if not hasattr(self._list_devices_process, 'returncode'):
+                        self._list_devices_process.terminate()
+                        Process().kill_process_by_name(
+                            'DTServiceHub')  # subprocess调用instruments命令，会产生孤儿进程：DTServiceHub，需强制关闭该进程
+                        if i == 2:
+                            raise RuntimeError('List devices timeout 5s!')
+                else:
+                    Process().kill_process_by_name(
+                        'DTServiceHub')  # subprocess调用instruments命令，会产生孤儿进程：DTServiceHub，需强制关闭该进程
+                    for line in self._dev_info.split('\n'):
+                        if 'Apple Watch' in line:
+                            continue
+                        if 'Apple TV' in line:
+                            continue
+                        matched = re.match(r'(.+)\s\((\d+\.\d+.*)\)\s\[([\w-]+)\](.*)', line)
+                        if matched:
+                            device = {}
+                            device["name"] = matched.group(1)
+                            device["udid"] = matched.group(3)
+                            if self.compare_xcode_version("7.0") < 0:
+                                version_type = matched.group(2).split(' ')
+                                device["ios"] = version_type[0]
+                                device["simulator"] = True if len(version_type) > 1 else False
+                            else:
+                                device["ios"] = matched.group(2)
+                                device["simulator"] = True if matched.group(4) else False
+                            devices.append(device)
+                    return devices

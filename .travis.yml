@@ -2,20 +2,26 @@ language: python
 matrix:
   include:
   - os: osx
+    osx_image: xcode11.3
     python: '2.7'
     language: generic
     env:
       - BUILD_SDIST=true
   - os: osx
+    osx_image: xcode11.3
     python: '3.5'
     language: generic
   - os: osx
+    osx_image: xcode11.3
     python: '3.6'
     language: generic
   - os: osx
+    osx_image: xcode11.3
     python: '3.7'
     language: generic  
 install:
+  - brew install openssl && brew install swig
+  - LDFLAGS="-L$(brew --prefix openssl)/lib" CFLAGS="-I$(brew --prefix openssl)/include" SWIG_FEATURES="-I$(brew --prefix openssl)/include" pip install m2crypto==0.32.0 --user
   - pip install -r requirements.txt --user
   - sudo mkdir /usr/local/man
   - sudo chmod a+w /usr/local/man
@@ -26,6 +32,7 @@ before_deploy:
   - echo $TRAVIS_TAG | sed 's/^.//' > version.txt
   - echo $PATH
   - export PATH=/Users/travis/Library/Python/2.7/bin:$PATH
+
 deploy:
   skip_cleanup: true
   skip_existing: true

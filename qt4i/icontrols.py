@@ -588,12 +588,21 @@ class Element(ControlContainer):
         :attention: 裁剪图像使用了PIL库，使用该接口请安装Pillow，如下：pip install Pillow
         :param image_path: 截屏图片的存放路径
         :type image_path: str
-        :param image_path: 截屏图片的存放路径
-        :type image_path: str
+        :param image_type: 截屏图片的类型
+        :type image_type: str
         :return: 截屏结果和截屏文件的路径
         :rtype: tuple (boolean, str)
         '''
-        base64_img = self._app.driver.device.capture_screen()
+        base64_img = None
+        from http.client import IncompleteRead
+        for _ in range(3):
+            try:
+                base64_img = self._app.driver.device.capture_screen()
+                if base64_img:
+                    break
+            except IncompleteRead:
+                time.sleep(2)
+                continue
         device_img_data = base64.decodestring(base64_img)
         from PIL import Image
         image_fd = StringIO(device_img_data)
@@ -875,9 +884,9 @@ class MetisView(object):
         '''
         rect = self.element.rect
         if isinstance(self.element, Element):
-            return (rect.top*self._dy, rect.left*self._dx, rect.width*self._dx, rect.height*self._dy)
+            return rect.top*self._dy, rect.left*self._dx, rect.width*self._dx, rect.height*self._dy
         else:
-            return (rect.top, rect.left, rect.width, rect.height)
+            return rect.top, rect.left, rect.width, rect.height
 
     @property
     def os_type(self):

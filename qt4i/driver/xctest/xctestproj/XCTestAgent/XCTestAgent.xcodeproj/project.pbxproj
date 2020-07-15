@@ -122,7 +122,7 @@
 				TargetAttributes = {
 					008AE4F21D5827D700D33A11 = {
 						CreatedOnToolsVersion = 7.3.1;
-						DevelopmentTeam = 95H9327388;
+						DevelopmentTeam = 5R4NU4T8YH;
 					};
 				};
 			};
@@ -131,6 +131,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 008AE4E81D5827B200D33A11;
@@ -213,11 +214,12 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer: SNG Tencent (9B27VW6AUK)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: SNG Tencent (9B27VW6AUK)";
+				CODE_SIGN_IDENTITY = "iPhone Developer: pengfei yang (5HHQVYXXUQ)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: pengfei yang (5HHQVYXXUQ)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = 95H9327388;
+				DEVELOPMENT_TEAM = 5R4NU4T8YH;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -247,9 +249,11 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_BUNDLE_IDENTIFIER = com.tencent.XCTestAgent;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
-				PROVISIONING_PROFILE_SPECIFIER = TencentSNGgn;
+				PROVISIONING_PROFILE_SPECIFIER = TencentSNGnewgn;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = TencentSNGnewgn;
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
@@ -272,11 +276,12 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer: SNG Tencent (9B27VW6AUK)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: SNG Tencent (9B27VW6AUK)";
+				CODE_SIGN_IDENTITY = "iPhone Developer: pengfei yang (5HHQVYXXUQ)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: pengfei yang (5HHQVYXXUQ)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = 95H9327388;
+				DEVELOPMENT_TEAM = 5R4NU4T8YH;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -299,9 +304,11 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_BUNDLE_IDENTIFIER = com.tencent.XCTestAgent;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
-				PROVISIONING_PROFILE_SPECIFIER = TencentSNGgn;
+				PROVISIONING_PROFILE_SPECIFIER = TencentSNGnewgn;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = TencentSNGnewgn;
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};

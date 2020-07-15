@@ -57,24 +57,25 @@ class RPCServerHost(RPCEndpoint):
             raise Exception('file(%s) does not exist' % filepath)
 
     @rpc_method
-    def push_file_data(self, data, filepath):
-        '''copy file to rpc server
+    def push_file_data(self, data, file_path, override=True):
+        '''push file to rpc server
 
-        :param data: file data
-        :type data: str
-        :param filepath: file path of rpc server
-        :type filepath: str
-        :returns: boolean
+        :param data: str
+        :param file_path: str
+        :param override: boolean
+        :return: boolean
         '''
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        with open(filepath, "wb") as fd:
+        if os.path.exists(file_path) and override:
+            os.remove(file_path)
+
+        with open(file_path, "ab") as fd:
             if six.PY3 and isinstance(data, six.string_types):
                 data = data.encode('utf-8')
                 fd.write(base64.decodebytes(data))
             else:
                 fd.write(base64.decodestring(data))
-        return os.path.isfile(filepath)
+
+        return os.path.isfile(file_path)
 
     @rpc_method
     def list_devices(self):

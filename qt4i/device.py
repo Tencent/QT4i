@@ -244,8 +244,6 @@ class DeviceResource(object):
     '''
 
     def __init__(self, host, port, udid, is_simulator, name, version, csst_uri=None, resource_id=None):
-        if host == socket.gethostbyname(socket.gethostname()):
-            host = DEFAULT_ADDR
         self._host = host
         self._port = port
         self._udid = udid
@@ -619,7 +617,16 @@ class Device(object):
         :rtype: tuple (boolean, str)
         '''
         try:
-            base64_img = self._driver.device.capture_screen()
+            base64_img = None
+            from http.client import IncompleteRead
+            for _ in range(3):
+                try:
+                    base64_img = self._driver.device.capture_screen()
+                    if base64_img:
+                        break
+                except IncompleteRead:
+                    time.sleep(2)  # 等待两秒后再次尝试
+                    continue
             if not image_path:
                 image_path = os.path.join(QT4i_LOGS_PATH, "p%s_%s.png" %(os.getpid(), uuid.uuid1()))
             with open(os.path.abspath(image_path), "wb") as fd:

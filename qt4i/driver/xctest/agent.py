@@ -48,7 +48,7 @@ CurrentDirectoryPath = os.path.abspath(os.path.dirname(__file__))
 MAX_PORT_NUM = 50
 DEFAULT_IP = '127.0.0.1'
 DEFAULT_PORT = 8100
-AGENT_STORE_PATH = '/cores/xctestagent'
+AGENT_STORE_PATH = os.path.join(dt.QT4I_CACHE_ROOT, 'xctestagent')
 
 
 class EnumDevice():
@@ -292,6 +292,8 @@ class XCUITestAgent(object):
     def _get_xcodebuild_agent_cmd_for_simulator(self, xcode_version):
         template_root = pkg_resources.resource_filename("qt4i", "driver/xctest/bin") #@UndefinedVariable
         xctestfile_template = os.path.join(template_root, "iphonesimulator-%s.xctestrun" % xcode_version.split('.')[0])
+        if not os.path.exists(xctestfile_template):  # default use xcode 11 simulator template
+            xctestfile_template = os.path.join(template_root, "iphonesimulator-11.xctestrun")
         agent_dir = self._build_agent_for_simulator(xcode_version)
         xctestfile = os.path.join(agent_dir, "%s.xctestrun" % self.udid)
         if not os.path.isfile(xctestfile):

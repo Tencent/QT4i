@@ -338,8 +338,7 @@ class Device(RPCEndpoint):
         except:
             filename = '/tmp/%s.png' % uuid.uuid1()
             if self.agent.type == EnumDevice.Simulator:
-                version = DT().get_xcode_version()
-                if version >= '8':
+                if DT.compare_xcode_version('8.0') >= 0:
                     cmd = ['xcrun', 'simctl', 'io', self.udid,'screenshot',filename]
                     p = subprocess.Popen(cmd,stdin=subprocess.PIPE,stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=False)
                     p.communicate()

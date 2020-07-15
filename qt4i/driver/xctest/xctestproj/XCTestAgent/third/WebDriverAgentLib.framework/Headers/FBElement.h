@@ -36,7 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly, strong, nullable) NSString *wdValue;
 
 /*! Element's unique identifier */
-@property (nonatomic, readonly) NSUInteger wdUID;
+@property (nonatomic, readonly, copy) NSString *wdUID;
 
 /*! Whether element is enabled */
 @property (nonatomic, readonly, getter = isWDEnabled) BOOL wdEnabled;
@@ -49,6 +49,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 /*! Whether element is an accessibility container (contains children of any depth that are accessible) */
 @property (nonatomic, readonly, getter = isWDAccessibilityContainer) BOOL wdAccessibilityContainer;
+
+#if TARGET_OS_TV
+/*! Whether element is focused */
+@property (nonatomic, readonly, getter = isWDFocused) BOOL wdFocused;
+#endif
 
 /**
  Returns value of given property specified in WebDriver Spec

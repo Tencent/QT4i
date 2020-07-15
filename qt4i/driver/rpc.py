@@ -186,7 +186,10 @@ class RPCClientProxy(object):
         if not isinstance(response, dict):
             raise TypeError('Response is not dict')
         if 'error' in response.keys() and response['error'] is not None:
-            raise DriverApiError(response['error']['message'])
+            if 'extra' in response['error']:
+                raise DriverApiError(response['error']['message'], response['error']['extra'])
+            else:
+                raise DriverApiError(response['error']['message'])
         else:
             response = response['result'][0]
             if isinstance(response, dict):
@@ -263,21 +266,29 @@ class DriverApiError(Exception):
     '''Driver API Error
     '''
 
+    def __init__(self, message, extra=None):
+        self.extra = extra
+        super(DriverApiError, self).__init__(message)
+
 
 class Fault(object):
     '''JSON-RPC Error
     '''
 
-    def __init__(self, code=-12306, message = None, rpcid=None):
+    def __init__(self, code=-12306, message=None, rpcid=None, extra=None):
         self.faultCode = code
         self.faultString = message
         self.rpcid = rpcid
+        self.extra = extra
         if not message:
             import traceback
             self.faultString = traceback.format_exc()
 
     def error(self):
-        return {"code": self.faultCode, "message": self.faultString}
+        if self.extra is None:
+            return {"code": self.faultCode, "message": self.faultString}
+        else:
+            return {"code": self.faultCode, "message": self.faultString, "extra":self.extra}
 
     def response(self):
         return json.dumps({"jsonrpc": "2.0", "error":self.error(), "id":self.rpcid})
@@ -416,6 +427,7 @@ class SimpleJSONRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
                             'device.get_element_tree_and_capture_screen',
                             'device.capture_screen',
                             'element.get_element_tree',
+                            'web.get_frame_tree',
                             ]
 
     def __init__(self, urls, addr):
@@ -505,9 +517,11 @@ class SimpleJSONRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
                 response = response.decode('utf-8')
             response = (response,)
             response = json.dumps({"jsonrpc": "2.0", "result": response, "id": rpcid})
-        except:
-            fault = Fault()
+        except Exception as e:
+            if hasattr(e, "extra"):
+                fault = Fault(message=e.message, extra=e.extra)
+            else:
+                fault = Fault()
             response = fault.response()
             log.error('%s >>> %s' % (method, fault.error()))
-            log.exception(fault.error())
         return response

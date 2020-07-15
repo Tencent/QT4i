@@ -61,17 +61,31 @@ class EnumSelector(object):
     ON_APP_DISCONNECTED = "_rpc_applicationDisconnected:"
 
 
+class ExceptionWithExtra(Exception):
+    """携带extra的异常"""
+
+    def __init__(self, message, extra={}):
+        self.extra = extra
+        self.extra['type'] = self.__class__.__name__
+        super(ExceptionWithExtra, self).__init__(message)
+
+
 class WebInspectorError(Exception):
     pass
 
 
-class WIPageUpdateError(Exception):
+class WIPageUpdateError(ExceptionWithExtra):
     """Web页面发生id更新"""
     pass
 
 
 class WIPageNotFoundError(Exception):
     """Web页面未找到page id"""
+    pass
+
+
+class WIContextIdUpdateError(ExceptionWithExtra):
+    """ContextId变更"""
     pass
 
 
@@ -217,7 +231,11 @@ class WebKitRemoteDebugProtocol(object):
         self.logger.info('new page id: %s'  %  page_id)
         self.title = pages[page_id]['WIRTitleKey']
         self.logger.info('title: %s'  % self.title.encode('utf-8'))
-        self.url = pages[page_id]['WIRURLKey']
+        # JavaScriptCore上下文没有url
+        if 'WIRURLKey' in pages[page_id].keys():
+            self.url = pages[page_id]['WIRURLKey']
+        else:
+            self.url = ''
         self.logger.info('url: %s'  % self.url)
         return page_id
     
@@ -226,7 +244,8 @@ class WebKitRemoteDebugProtocol(object):
         self._sort_page_ids(pages)
         for page in pages:
             if 'WIRTitleKey' in pages[page].keys() and pages[page]['WIRTitleKey'] == title:
-                self.url = pages[page]['WIRURLKey']
+                if 'WIRURLKey' in pages[page].keys():
+                    self.url = pages[page]['WIRURLKey']
                 return page
 
     def _get_page_id_by_url(self, pages, url):
@@ -437,8 +456,15 @@ class WebKitRemoteDebugProtocol(object):
             if ('id' in data and (data['id'] == self.seq)) or ignore_id:
                 if not (self.is_target_domain and self.is_target_wrapped == True):
                     return data
-            elif 'method' in data and data['method'] == 'Target.dispatchMessageFromTarget':
-                return self._on_dispatch_message_from_target(data['params'])
+            elif 'method' in data:
+                if data['method'] == 'Target.dispatchMessageFromTarget':
+                    return self._on_dispatch_message_from_target(data['params'])
+                elif data['method'] == 'Runtime.executionContextCreated':
+                    context = data['params']['context']
+                    if 'frameId' in context and context['isPageContext']:
+                        extra = {'frameId':context['frameId'], 'contextId':context['id']}
+                        raise WIContextIdUpdateError("Execution context with given id not found.", extra)
+
 
 
 class RealDeviceProtocol(WebKitRemoteDebugProtocol): 
@@ -502,4 +528,3 @@ class SimulatorProtocol(WebKitRemoteDebugProtocol):
     @property
     def is_complete_supported(self):
         return True
-        

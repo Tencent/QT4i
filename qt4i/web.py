@@ -24,6 +24,7 @@ import traceback
 from qt4i.icontrols import Element
 from qt4i.icontrols import Window
 from qt4i.qpath import QPath
+from qt4i.driver.rpc import DriverApiError
 from qt4w.util import Frame
 from qt4w.util import FrameSelector
 from qt4w.util import JavaScriptError
@@ -173,17 +174,22 @@ class IOSWebView(Element):
         :type script: str
         '''
         result = None
+        frame_id = None
         context_id = None
-        if frame_xpaths:
-            frame_id = self._get_frame_id_by_xpath(frame_xpaths)
-            context_id = self._get_context_id(frame_id)
         try:
+            if frame_xpaths:
+                frame_id = self._get_frame_id_by_xpath(frame_xpaths)
+                context_id = self._get_context_id(frame_id)
             result = self._driver.web.eval_script(self.bundle_id, context_id, self.page_id, script)
-        except Exception:
-            err = traceback.format_exc()
-            if 'WIPageUpdateError' in err:
-                self.page_id = self._driver.web.get_page_id(self.bundle_id, self.title, self.url_key)
-                return self.eval_script(frame_xpaths, script)
+        except DriverApiError as e:
+            if e.extra is not None:
+                extra = e.extra
+                if 'WIPageUpdateError' == extra['type']:
+                    self.page_id = self._driver.web.get_page_id(self.bundle_id, self.title, self.url_key)
+                    return self.eval_script(frame_xpaths, script)
+                elif 'WIContextIdUpdateError' == extra['type']:
+                    self._context_ids[extra['frameId']] = extra['contextId']
+                    return self.eval_script(frame_xpaths, script)
             else:
                 raise
         if 'className' in result and (result['className'] == 'ReferenceError' or result['className'] == 'Error'):

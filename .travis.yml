@@ -16,6 +16,7 @@ matrix:
     python: '3.7'
     language: generic  
 install:
+  - sudo xcode-select --install
   - brew install openssl && brew install swig
   - LDFLAGS="-L$(brew --prefix openssl)/lib" CFLAGS="-I$(brew --prefix openssl)/include" SWIG_FEATURES="-I$(brew --prefix openssl)/include" pip install m2crypto==0.32.0 --user
   - pip install -r requirements.txt --user
